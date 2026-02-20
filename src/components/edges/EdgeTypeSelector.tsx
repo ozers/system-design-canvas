@@ -38,7 +38,7 @@ export function EdgeTypeSelector({ edgeId, currentType, currentLabel }: EdgeType
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button className="rounded p-0.5 hover:bg-accent transition-colors">
+        <button className="rounded p-0.5 hover:bg-accent transition-colors" aria-label="Edit connection type">
           <Settings2 className="h-3 w-3 text-muted-foreground" />
         </button>
       </PopoverTrigger>

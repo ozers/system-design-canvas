@@ -18,6 +18,11 @@ export const EDGE_REGISTRY: Record<SystemEdgeType, EdgeTypeConfig> = {
     color: '#22c55e', // green-500
     animated: false,
   },
+  graphql: {
+    label: 'GraphQL',
+    color: '#e535ab', // graphql pink
+    animated: false,
+  },
   websocket: {
     label: 'WebSocket',
     color: '#a855f7', // purple-500
@@ -28,6 +33,18 @@ export const EDGE_REGISTRY: Record<SystemEdgeType, EdgeTypeConfig> = {
     label: 'Pub/Sub',
     color: '#ec4899', // pink-500
     strokeDasharray: '8 4',
+    animated: true,
+  },
+  mqtt: {
+    label: 'MQTT',
+    color: '#7c3aed', // violet-600
+    strokeDasharray: '6 3',
+    animated: true,
+  },
+  'event-stream': {
+    label: 'SSE',
+    color: '#f97316', // orange-500
+    strokeDasharray: '10 4',
     animated: true,
   },
   tcp: {

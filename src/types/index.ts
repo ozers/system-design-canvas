@@ -11,6 +11,18 @@ export const SYSTEM_NODE_TYPES = [
   'client',
   'cdn',
   'api-gateway',
+  'group',
+  'dns',
+  'waf',
+  'worker',
+  'serverless',
+  'container-cluster',
+  'object-storage',
+  'search-index',
+  'stream',
+  'scheduler',
+  'logging',
+  'monitoring',
 ] as const;
 
 export type SystemNodeType = (typeof SYSTEM_NODE_TYPES)[number];
@@ -19,8 +31,11 @@ export type SystemNodeType = (typeof SYSTEM_NODE_TYPES)[number];
 export const SYSTEM_EDGE_TYPES = [
   'rest',
   'grpc',
+  'graphql',
   'websocket',
   'pub-sub',
+  'mqtt',
+  'event-stream',
   'tcp',
   'db-query',
 ] as const;

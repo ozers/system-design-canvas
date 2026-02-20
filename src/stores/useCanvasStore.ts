@@ -14,6 +14,11 @@ interface HistoryEntry {
   edges: SystemEdge[];
 }
 
+interface PendingEdge {
+  edgeId: string;
+  position: { x: number; y: number };
+}
+
 interface CanvasStore {
   // State
   nodes: SystemNode[];
@@ -21,6 +26,10 @@ interface CanvasStore {
   viewport: Viewport;
   selectedNodeId: string | null;
   projectId: string | null;
+
+  // Pending edge type selection
+  pendingEdge: PendingEdge | null;
+  setPendingEdge: (pending: PendingEdge | null) => void;
 
   // Undo/redo
   history: HistoryEntry[];
@@ -49,6 +58,8 @@ interface CanvasStore {
   pasteNode: () => void;
   undo: () => void;
   redo: () => void;
+  setNodes: (nodes: SystemNode[]) => void;
+  setEdges: (edges: SystemEdge[]) => void;
   pushHistory: () => void;
 }
 
@@ -61,6 +72,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   history: [],
   historyIndex: -1,
   clipboard: null,
+  pendingEdge: null,
+  setPendingEdge: (pending) => set({ pendingEdge: pending }),
   snapToGrid: false,
   toggleSnapToGrid: () => set((state) => ({ snapToGrid: !state.snapToGrid })),
 
@@ -145,6 +158,10 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   },
 
   setViewport: (viewport) => set({ viewport }),
+
+  setNodes: (nodes) => set({ nodes }),
+
+  setEdges: (edges) => set({ edges }),
 
   setSelectedNodeId: (id) => set({ selectedNodeId: id }),
 

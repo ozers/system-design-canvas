@@ -1,15 +1,18 @@
 'use client';
 
-import { useCallback, useEffect, type DragEvent } from 'react';
+import { useCallback, useEffect, useRef, type DragEvent } from 'react';
 import {
   ReactFlow,
   Background,
   Controls,
   MiniMap,
+  SelectionMode,
+  reconnectEdge,
   useReactFlow,
   type OnNodesChange,
   type OnEdgesChange,
   type OnConnect,
+  type OnReconnect,
   ReactFlowProvider,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -17,18 +20,52 @@ import '@xyflow/react/dist/style.css';
 import { useCanvasStore } from '@/stores/useCanvasStore';
 import { useProjectStore } from '@/stores/useProjectStore';
 import { BaseSystemNode } from '@/components/nodes/BaseSystemNode';
+import { GroupNode } from '@/components/nodes/GroupNode';
 import { StickyNote } from '@/components/nodes/StickyNote';
 import { SystemEdge } from '@/components/edges/SystemEdge';
+import { ConnectionTypePicker } from '@/components/edges/ConnectionTypePicker';
 import { CanvasToolbar } from './CanvasToolbar';
 import { NodePalette } from './NodePalette';
 import { NodeEditor } from '@/components/nodes/NodeEditor';
 import { Header } from '@/components/layout/Header';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { OnboardingOverlay } from './OnboardingOverlay';
 import { NODE_REGISTRY } from '@/components/nodes/node-registry';
 import type { SystemNode, SystemEdge as SystemEdgeType, SystemNodeType, SystemNodeData } from '@/types';
 
-const nodeTypes = { system: BaseSystemNode, note: StickyNote };
+const MINIMAP_NODE_COLORS: Record<string, string> = {
+  service: '#93bbfd',
+  database: '#86e0a5',
+  cache: '#fcd68d',
+  queue: '#f9a8d4',
+  'load-balancer': '#a5b4fc',
+  client: '#c4b5fd',
+  cdn: '#7dd3c4',
+  'api-gateway': '#fca5a5',
+  group: '#94a3b8',
+  note: '#fcd68d',
+  dns: '#7dd3fc',
+  waf: '#fdba74',
+  worker: '#94a3b8',
+  serverless: '#c4b5fd',
+  'container-cluster': '#67e8f9',
+  'object-storage': '#6ee7b7',
+  'search-index': '#fde047',
+  stream: '#fda4af',
+  scheduler: '#a8a29e',
+  logging: '#bef264',
+  monitoring: '#f0abfc',
+};
+
+function getMinimapNodeColor(node: SystemNode): string {
+  if (node.type === 'note') return MINIMAP_NODE_COLORS.note;
+  if (node.type === 'group') return MINIMAP_NODE_COLORS.group;
+  const nodeType = (node.data as SystemNodeData)?.nodeType;
+  return MINIMAP_NODE_COLORS[nodeType] ?? '#94a3b8';
+}
+
+const nodeTypes = { system: BaseSystemNode, group: GroupNode, note: StickyNote };
 const edgeTypes = { system: SystemEdge };
 
 function CanvasInner({ projectId }: { projectId: string }) {
@@ -46,6 +83,11 @@ function CanvasInner({ projectId }: { projectId: string }) {
   const deleteNode = useCanvasStore((s) => s.deleteNode);
   const deleteEdge = useCanvasStore((s) => s.deleteEdge);
   const pushHistory = useCanvasStore((s) => s.pushHistory);
+  const setPendingEdge = useCanvasStore((s) => s.setPendingEdge);
+  const setEdges = useCanvasStore((s) => s.setEdges);
+
+  const connectEndPos = useRef<{ x: number; y: number } | null>(null);
+  const edgeReconnectSuccessful = useRef(true);
 
   const { screenToFlowPosition, fitView } = useReactFlow();
   useAutoSave();
@@ -112,6 +154,56 @@ function CanvasInner({ projectId }: { projectId: string }) {
     pushHistory();
   }, [pushHistory]);
 
+  // Wrap onConnect to show type picker after connection
+  const handleConnect: OnConnect = useCallback(
+    (connection) => {
+      onConnect(connection);
+      // After the edge is created, show type picker at cursor position
+      if (connectEndPos.current) {
+        // Get the newest edge (just created by onConnect)
+        const latestEdges = useCanvasStore.getState().edges;
+        const newEdge = latestEdges[latestEdges.length - 1];
+        if (newEdge) {
+          setPendingEdge({
+            edgeId: newEdge.id,
+            position: connectEndPos.current,
+          });
+        }
+      }
+    },
+    [onConnect, setPendingEdge]
+  );
+
+  const onConnectEnd = useCallback((event: MouseEvent | TouchEvent) => {
+    const pos = 'changedTouches' in event
+      ? { x: event.changedTouches[0].clientX, y: event.changedTouches[0].clientY }
+      : { x: (event as MouseEvent).clientX, y: (event as MouseEvent).clientY };
+    connectEndPos.current = pos;
+  }, []);
+
+  // Edge reconnect handlers
+  const onReconnectStart = useCallback(() => {
+    edgeReconnectSuccessful.current = false;
+  }, []);
+
+  const onReconnect: OnReconnect = useCallback(
+    (oldEdge, newConnection) => {
+      edgeReconnectSuccessful.current = true;
+      pushHistory();
+      setEdges(reconnectEdge(oldEdge, newConnection, useCanvasStore.getState().edges) as SystemEdgeType[]);
+    },
+    [pushHistory, setEdges]
+  );
+
+  const onReconnectEnd = useCallback(
+    (_: MouseEvent | TouchEvent, edge: SystemEdgeType) => {
+      if (!edgeReconnectSuccessful.current) {
+        deleteEdge(edge.id);
+      }
+    },
+    [deleteEdge]
+  );
+
   const onDragOver = useCallback((event: DragEvent) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
@@ -129,8 +221,9 @@ function CanvasInner({ projectId }: { projectId: string }) {
       });
 
       const config = NODE_REGISTRY[nodeType];
+      const isGroup = nodeType === 'group';
       const data: SystemNodeData = {
-        label: config.label,
+        label: isGroup ? '' : config.label,
         nodeType,
         description: '',
         techStack: [...config.defaultTechStack],
@@ -138,8 +231,9 @@ function CanvasInner({ projectId }: { projectId: string }) {
 
       addNode({
         id: `node-${Date.now()}`,
-        type: 'system',
+        type: isGroup ? 'group' : 'system',
         position,
+        ...(isGroup ? { style: { width: 300, height: 200 } } : {}),
         data,
       });
     },
@@ -161,7 +255,11 @@ function CanvasInner({ projectId }: { projectId: string }) {
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
+            onConnect={handleConnect}
+            onConnectEnd={onConnectEnd}
+            onReconnect={onReconnect}
+            onReconnectStart={onReconnectStart}
+            onReconnectEnd={onReconnectEnd}
             onNodeClick={onNodeClick}
             onPaneClick={onPaneClick}
             onNodesDelete={onNodesDelete}
@@ -176,6 +274,7 @@ function CanvasInner({ projectId }: { projectId: string }) {
             defaultEdgeOptions={{ type: 'system' }}
             fitView
             fitViewOptions={{ padding: 0.15 }}
+            selectionMode={SelectionMode.Partial}
             snapToGrid={snapToGrid}
             snapGrid={[20, 20]}
             deleteKeyCode={['Backspace', 'Delete']}
@@ -185,12 +284,14 @@ function CanvasInner({ projectId }: { projectId: string }) {
             <Controls position="top-right" />
             <MiniMap
               position="bottom-right"
-              className="!bg-card !border !border-border !shadow-sm"
-              maskColor="rgba(0, 0, 0, 0.1)"
+              className="!bg-card !border !border-border !shadow-sm minimap-mask"
+              nodeColor={getMinimapNodeColor}
             />
             <CanvasToolbar />
           </ReactFlow>
           <NodePalette />
+          <ConnectionTypePicker />
+          <OnboardingOverlay />
         </div>
         {isEditorOpen && <NodeEditor />}
       </div>

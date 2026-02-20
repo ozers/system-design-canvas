@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useCallback } from 'react';
-import { type NodeProps } from '@xyflow/react';
+import { type NodeProps, NodeResizer } from '@xyflow/react';
 import { useCanvasStore } from '@/stores/useCanvasStore';
 import { X } from 'lucide-react';
 
@@ -27,10 +27,17 @@ function StickyNoteComponent({ id, data, selected }: StickyNoteProps) {
 
   return (
     <div
-      className={`min-w-[180px] max-w-[280px] rounded-md p-3 shadow-md transition-shadow bg-amber-100 dark:bg-amber-900/50 border border-amber-200 dark:border-amber-700 ${
+      className={`min-w-[180px] min-h-[80px] rounded-md p-3 shadow-md transition-shadow bg-amber-100 dark:bg-amber-900/50 border border-amber-200 dark:border-amber-700 ${
         selected ? 'ring-2 ring-ring shadow-lg' : ''
       }`}
     >
+      <NodeResizer
+        isVisible={!!selected}
+        minWidth={180}
+        minHeight={80}
+        lineClassName="!border-amber-500"
+        handleClassName="!w-2 !h-2 !bg-amber-500 !border-amber-500"
+      />
       {selected && (
         <button
           className="absolute -right-2 -top-2 rounded-full bg-card shadow p-0.5 hover:bg-destructive/10"

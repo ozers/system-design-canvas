@@ -145,8 +145,12 @@
   --xy-minimap-background-color-default: #111827;
 }
 
+.react-flow__minimap-mask {
+  --xy-minimap-mask-background-color-default: rgba(0, 0, 0, 0.1);
+}
+
 .dark .react-flow__minimap-mask {
-  --xy-minimap-mask-background-color-default: rgba(17, 24, 39, 0.7);
+  --xy-minimap-mask-background-color-default: rgba(0, 0, 0, 0.6);
 }
 
 .dark .react-flow__minimap-node {
@@ -176,4 +180,25 @@
 
 .dark .react-flow__background pattern circle {
   fill: #374151 !important;
+}
+
+/* Enhanced edge animations */
+@keyframes edge-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+@keyframes edge-flow-fast {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+.edge-animated-slow {
+  animation: edge-flow 3s linear infinite;
+}
+
+.edge-animated-fast {
+  animation: edge-flow-fast 1.5s linear infinite;
 }

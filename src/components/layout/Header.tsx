@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Boxes, ArrowLeft, Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
+import { KeyboardShortcuts } from '@/components/canvas/KeyboardShortcuts';
 
 interface HeaderProps {
   projectName?: string;
@@ -15,7 +16,7 @@ export function Header({ projectName, showBack }: HeaderProps) {
 
   return (
     <header className="border-b border-border bg-card">
-      <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-6">
+      <div className="mx-auto flex h-14 items-center gap-3 px-4 md:px-6">
         {showBack && (
           <Link href="/">
             <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -25,7 +26,7 @@ export function Header({ projectName, showBack }: HeaderProps) {
         )}
         <Link href="/" className="flex items-center gap-2 font-semibold text-foreground">
           <Boxes className="h-5 w-5 text-primary" />
-          System Design Canvas
+          <span className="hidden sm:inline">System Design Canvas</span>
         </Link>
         {projectName && (
           <>
@@ -33,8 +34,9 @@ export function Header({ projectName, showBack }: HeaderProps) {
             <span className="text-sm text-muted-foreground truncate">{projectName}</span>
           </>
         )}
-        <div className="ml-auto">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleTheme}>
+        <div className="ml-auto flex items-center gap-1">
+          {showBack && <KeyboardShortcuts />}
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleTheme} aria-label="Toggle theme">
             {theme === 'dark' ? (
               <Sun className="h-4 w-4" />
             ) : (

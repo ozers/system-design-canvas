@@ -1,7 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { Handle, Position, NodeResizer, type NodeProps } from '@xyflow/react';
 import { NODE_REGISTRY } from './node-registry';
 import type { SystemNodeData } from '@/types';
 import { cn } from '@/lib/utils';
@@ -17,7 +17,7 @@ function BaseSystemNodeComponent({ id, data, selected }: BaseSystemNodeProps) {
   return (
     <div
       className={cn(
-        'min-w-[160px] rounded-lg border-2 px-4 py-3 shadow-sm transition-shadow',
+        'min-w-[160px] min-h-[80px] rounded-lg border-2 px-4 py-3 shadow-sm transition-shadow',
         config.bgColor,
         config.borderColor,
         config.darkBgColor,
@@ -26,6 +26,13 @@ function BaseSystemNodeComponent({ id, data, selected }: BaseSystemNodeProps) {
       )}
       onDoubleClick={() => setSelectedNodeId(id)}
     >
+      <NodeResizer
+        isVisible={!!selected}
+        minWidth={160}
+        minHeight={80}
+        lineClassName="!border-primary"
+        handleClassName="!w-2 !h-2 !bg-primary !border-primary"
+      />
       <Handle type="target" position={Position.Top} className="!bg-muted-foreground !w-3 !h-3" />
       <Handle type="target" position={Position.Left} id="left" className="!bg-muted-foreground !w-3 !h-3" />
 
@@ -39,7 +46,7 @@ function BaseSystemNodeComponent({ id, data, selected }: BaseSystemNodeProps) {
           {data.techStack.map((tech) => (
             <span
               key={tech}
-              className="rounded bg-background/60 px-1.5 py-0.5 text-[10px] text-muted-foreground"
+              className="rounded bg-background/60 dark:bg-background/40 px-1.5 py-0.5 text-[10px] text-muted-foreground dark:text-foreground/70"
             >
               {tech}
             </span>
