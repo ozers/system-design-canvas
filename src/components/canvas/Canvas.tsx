@@ -1,10 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import {
   ReactFlow,
   Background,
   BackgroundVariant,
+  ConnectionMode,
   Controls,
   MiniMap,
   SelectionMode,
@@ -31,6 +32,7 @@ import { NodeEditor } from '@/components/nodes/NodeEditor';
 import { Header } from '@/components/layout/Header';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { useTheme } from '@/hooks/useTheme';
 import { OnboardingOverlay } from './OnboardingOverlay';
 import { CanvasContextMenu, type ContextMenuState } from './CanvasContextMenu';
 import { NODE_REGISTRY } from '@/components/nodes/node-registry';
@@ -83,6 +85,20 @@ function CanvasInner({ projectId }: { projectId: string }) {
   const snapToGrid = useCanvasStore((s) => s.snapToGrid);
   const backgroundVariant = useCanvasStore((s) => s.backgroundVariant);
   const presentationMode = useCanvasStore((s) => s.presentationMode);
+  const { theme } = useTheme();
+
+  const bgColor = useMemo(() => {
+    const isDark = theme === 'dark';
+    switch (backgroundVariant) {
+      case 'dots':
+        return isDark ? '#323844' : '#c8ccd4';
+      case 'lines':
+      case 'cross':
+        return isDark ? '#2a2e38' : '#e0e2e8';
+      default:
+        return undefined;
+    }
+  }, [theme, backgroundVariant]);
   const togglePresentationMode = useCanvasStore((s) => s.togglePresentationMode);
   const addNode = useCanvasStore((s) => s.addNode);
   const deleteNode = useCanvasStore((s) => s.deleteNode);
@@ -98,9 +114,12 @@ function CanvasInner({ projectId }: { projectId: string }) {
   useAutoSave();
   useKeyboardShortcuts();
 
-  // Context menu + copy/paste
+  // Context menu
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
-  const [clipboard, setClipboard] = useState<SystemNode | null>(null);
+  const clipboard = useCanvasStore((s) => s.clipboard);
+  const copySelection = useCanvasStore((s) => s.copySelection);
+  const pasteSelection = useCanvasStore((s) => s.pasteSelection);
+  const deleteSelection = useCanvasStore((s) => s.deleteSelection);
 
   const projects = useProjectStore((s) => s.projects);
   const loadProjects = useProjectStore((s) => s.loadProjects);
@@ -257,52 +276,27 @@ function CanvasInner({ projectId }: { projectId: string }) {
 
   const onNodeContextMenu = useCallback((event: React.MouseEvent, node: SystemNode) => {
     event.preventDefault();
-    setContextMenu({ x: event.clientX, y: event.clientY, nodeId: node.id });
+    const selectedCount = useCanvasStore.getState().nodes.filter((n) => n.selected).length;
+    setContextMenu({ x: event.clientX, y: event.clientY, nodeId: node.id, selectedCount });
   }, []);
 
-  const handleCopy = useCallback((nodeId: string) => {
-    const node = nodes.find((n) => n.id === nodeId);
-    if (node) setClipboard(node);
-  }, [nodes]);
+  const handleCopy = useCallback(() => {
+    copySelection();
+  }, [copySelection]);
 
-  const handlePaste = useCallback((screenX: number, screenY: number) => {
-    if (!clipboard) return;
-    const position = screenToFlowPosition({ x: screenX, y: screenY });
-    addNode({
-      id: `node-${Date.now()}`,
-      type: clipboard.type,
-      position,
-      ...(clipboard.type === 'group' ? { style: { width: 300, height: 200 } } : {}),
-      data: { ...clipboard.data },
-    });
-  }, [clipboard, screenToFlowPosition, addNode]);
+  const handlePaste = useCallback(() => {
+    pasteSelection();
+  }, [pasteSelection]);
 
-  // Ctrl+C / Ctrl+V keyboard shortcuts
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      const selectedId = useCanvasStore.getState().selectedNodeId;
-      if ((e.metaKey || e.ctrlKey) && e.key === 'c' && selectedId) {
-        const node = useCanvasStore.getState().nodes.find((n) => n.id === selectedId);
-        if (node) setClipboard(node);
-      }
-      if ((e.metaKey || e.ctrlKey) && e.key === 'v' && clipboard) {
-        // Paste at center of viewport
-        const el = document.querySelector('.react-flow');
-        if (el) {
-          const rect = el.getBoundingClientRect();
-          handlePaste(rect.left + rect.width / 2, rect.top + rect.height / 2);
-        }
-      }
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [clipboard, handlePaste]);
+  const handleDeleteSelection = useCallback(() => {
+    deleteSelection();
+  }, [deleteSelection]);
 
   const currentProject = projects.find((p) => p.id === projectId);
   const selectedNodeId = useCanvasStore((s) => s.selectedNodeId);
   const selectedNode = nodes.find((n) => n.id === selectedNodeId);
-  const isEditorOpen = !!selectedNode;
+  const selectedCount = nodes.filter((n) => n.selected).length;
+  const isEditorOpen = !!selectedNode && selectedCount <= 1;
 
   return (
     <div className="flex h-screen w-screen flex-col">
@@ -335,6 +329,7 @@ function CanvasInner({ projectId }: { projectId: string }) {
             defaultEdgeOptions={{ type: 'system' }}
             fitView
             fitViewOptions={{ padding: 0.15 }}
+            connectionMode={ConnectionMode.Loose}
             selectionMode={SelectionMode.Partial}
             snapToGrid={snapToGrid}
             snapGrid={[20, 20]}
@@ -342,11 +337,16 @@ function CanvasInner({ projectId }: { projectId: string }) {
             className="bg-background"
           >
             {backgroundVariant !== 'none' && (
-              <Background variant={
-                backgroundVariant === 'dots' ? BackgroundVariant.Dots :
-                backgroundVariant === 'lines' ? BackgroundVariant.Lines :
-                BackgroundVariant.Cross
-              } />
+              <Background
+                variant={
+                  backgroundVariant === 'dots' ? BackgroundVariant.Dots :
+                  backgroundVariant === 'lines' ? BackgroundVariant.Lines :
+                  BackgroundVariant.Cross
+                }
+                gap={backgroundVariant === 'dots' ? 20 : 24}
+                size={backgroundVariant === 'dots' ? 1 : 0.4}
+                color={bgColor}
+              />
             )}
             {!presentationMode && <Controls position="top-right" />}
             {!presentationMode && (
@@ -373,9 +373,10 @@ function CanvasInner({ projectId }: { projectId: string }) {
             <CanvasContextMenu
               menu={contextMenu}
               onClose={() => setContextMenu(null)}
-              clipboard={clipboard}
+              hasClipboard={!!clipboard}
               onCopy={handleCopy}
               onPaste={handlePaste}
+              onDeleteSelection={handleDeleteSelection}
             />
           )}
         </div>

@@ -7,8 +7,9 @@ export function useKeyboardShortcuts() {
   const undo = useCanvasStore((s) => s.undo);
   const redo = useCanvasStore((s) => s.redo);
   const setSelectedNodeId = useCanvasStore((s) => s.setSelectedNodeId);
-  const copyNode = useCanvasStore((s) => s.copyNode);
-  const pasteNode = useCanvasStore((s) => s.pasteNode);
+  const copySelection = useCanvasStore((s) => s.copySelection);
+  const pasteSelection = useCanvasStore((s) => s.pasteSelection);
+  const selectAll = useCanvasStore((s) => s.selectAll);
   const presentationMode = useCanvasStore((s) => s.presentationMode);
   const togglePresentationMode = useCanvasStore((s) => s.togglePresentationMode);
 
@@ -21,17 +22,24 @@ export function useKeyboardShortcuts() {
 
       const isMod = e.metaKey || e.ctrlKey;
 
+      // Select All: Ctrl/Cmd + A
+      if (isMod && e.key === 'a') {
+        e.preventDefault();
+        selectAll();
+        return;
+      }
+
       // Copy: Ctrl/Cmd + C
       if (isMod && e.key === 'c') {
         e.preventDefault();
-        copyNode();
+        copySelection();
         return;
       }
 
       // Paste: Ctrl/Cmd + V
       if (isMod && e.key === 'v') {
         e.preventDefault();
-        pasteNode();
+        pasteSelection();
         return;
       }
 
@@ -68,5 +76,5 @@ export function useKeyboardShortcuts() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [undo, redo, setSelectedNodeId, copyNode, pasteNode, presentationMode, togglePresentationMode]);
+  }, [undo, redo, setSelectedNodeId, copySelection, pasteSelection, selectAll, presentationMode, togglePresentationMode]);
 }

@@ -7,7 +7,7 @@ function getFlowElement(): HTMLElement | null {
 
 function getExportBgColor(): string {
   const isDark = document.documentElement.classList.contains('dark');
-  return isDark ? '#0a0a0a' : '#f9fafb';
+  return isDark ? '#262b38' : '#f7f8fb';
 }
 
 export async function exportToPng(filename = 'system-design') {

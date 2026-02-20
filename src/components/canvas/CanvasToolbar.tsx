@@ -44,6 +44,7 @@ export function CanvasToolbar() {
   const cycleBackground = useCanvasStore((s) => s.cycleBackground);
   const togglePresentationMode = useCanvasStore((s) => s.togglePresentationMode);
   const saveStatus = useCanvasStore((s) => s.saveStatus);
+  const selectedCount = useCanvasStore((s) => s.nodes.filter((n) => n.selected).length);
 
   const undoCount = historyIndex;
   const redoCount = historyLength - 1 - historyIndex;
@@ -300,12 +301,14 @@ export function CanvasToolbar() {
           <TooltipTrigger asChild>
             <span className="flex items-center gap-1 px-1.5 text-[10px] text-muted-foreground cursor-default tabular-nums">
               {nodes.length}N &middot; {edges.length}E
+              {selectedCount > 0 && <>&middot; {selectedCount} sel</>}
               {saveStatus === 'saving' && <Loader2 className="h-3 w-3 animate-spin" />}
               {saveStatus === 'saved' && <CheckCircle2 className="h-3 w-3 text-green-500" />}
             </span>
           </TooltipTrigger>
           <TooltipContent>
             {nodes.length} node{nodes.length !== 1 ? 's' : ''}, {edges.length} edge{edges.length !== 1 ? 's' : ''}
+            {selectedCount > 0 && `, ${selectedCount} selected`}
             {saveStatus === 'saving' && ' — Saving...'}
             {saveStatus === 'saved' && ' — Saved'}
           </TooltipContent>

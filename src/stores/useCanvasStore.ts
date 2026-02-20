@@ -36,7 +36,7 @@ interface CanvasStore {
   historyIndex: number;
 
   // Clipboard
-  clipboard: SystemNode | null;
+  clipboard: { nodes: SystemNode[]; edges: SystemEdge[] } | null;
 
   // Grid snap
   snapToGrid: boolean;
@@ -66,8 +66,10 @@ interface CanvasStore {
   deleteEdge: (edgeId: string) => void;
   setViewport: (viewport: Viewport) => void;
   setSelectedNodeId: (id: string | null) => void;
-  copyNode: () => void;
-  pasteNode: () => void;
+  copySelection: () => void;
+  pasteSelection: () => void;
+  deleteSelection: () => void;
+  selectAll: () => void;
   undo: () => void;
   redo: () => void;
   setNodes: (nodes: SystemNode[]) => void;
@@ -187,31 +189,83 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
   setSelectedNodeId: (id) => set({ selectedNodeId: id }),
 
-  copyNode: () => {
-    const { selectedNodeId, nodes } = get();
-    if (!selectedNodeId) return;
-    const node = nodes.find((n) => n.id === selectedNodeId);
-    if (node) {
-      set({ clipboard: structuredClone(node) });
-    }
+  copySelection: () => {
+    const { nodes, edges } = get();
+    const selectedNodes = nodes.filter((n) => n.selected);
+    if (selectedNodes.length === 0) return;
+    const selectedIds = new Set(selectedNodes.map((n) => n.id));
+    const connectedEdges = edges.filter(
+      (e) => selectedIds.has(e.source) && selectedIds.has(e.target)
+    );
+    set({
+      clipboard: {
+        nodes: structuredClone(selectedNodes),
+        edges: structuredClone(connectedEdges),
+      },
+    });
   },
 
-  pasteNode: () => {
+  pasteSelection: () => {
     const { clipboard } = get();
-    if (!clipboard) return;
-    const newNode: SystemNode = {
-      ...structuredClone(clipboard),
-      id: `node-${Date.now()}`,
-      position: {
-        x: clipboard.position.x + 50,
-        y: clipboard.position.y + 50,
-      },
-    };
+    if (!clipboard || clipboard.nodes.length === 0) return;
+    const idMap = new Map<string, string>();
+    const now = Date.now();
+    const newNodes = clipboard.nodes.map((node, i) => {
+      const newId = `node-${now}-${i}`;
+      idMap.set(node.id, newId);
+      return {
+        ...structuredClone(node),
+        id: newId,
+        position: {
+          x: node.position.x + 50,
+          y: node.position.y + 50,
+        },
+        selected: true,
+      };
+    });
+    const newEdges = clipboard.edges.map((edge, i) => ({
+      ...structuredClone(edge),
+      id: `edge-${now}-${i}`,
+      source: idMap.get(edge.source) ?? edge.source,
+      target: idMap.get(edge.target) ?? edge.target,
+    }));
     get().pushHistory();
     set((state) => ({
-      nodes: [...state.nodes, newNode],
-      selectedNodeId: newNode.id,
-      clipboard: { ...structuredClone(clipboard), position: newNode.position },
+      nodes: [
+        ...state.nodes.map((n) => ({ ...n, selected: false })),
+        ...newNodes,
+      ],
+      edges: [...state.edges, ...newEdges],
+      selectedNodeId: newNodes.length === 1 ? newNodes[0].id : null,
+      clipboard: {
+        nodes: structuredClone(newNodes),
+        edges: structuredClone(newEdges),
+      },
+    }));
+  },
+
+  deleteSelection: () => {
+    const { nodes } = get();
+    const selectedIds = new Set(
+      nodes.filter((n) => n.selected).map((n) => n.id)
+    );
+    if (selectedIds.size === 0) return;
+    get().pushHistory();
+    set((state) => ({
+      nodes: state.nodes.filter((n) => !selectedIds.has(n.id)),
+      edges: state.edges.filter(
+        (e) => !selectedIds.has(e.source) && !selectedIds.has(e.target)
+      ),
+      selectedNodeId:
+        state.selectedNodeId && selectedIds.has(state.selectedNodeId)
+          ? null
+          : state.selectedNodeId,
+    }));
+  },
+
+  selectAll: () => {
+    set((state) => ({
+      nodes: state.nodes.map((n) => ({ ...n, selected: true })),
     }));
   },
 
