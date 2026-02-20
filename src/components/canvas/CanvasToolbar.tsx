@@ -61,7 +61,7 @@ export function CanvasToolbar() {
   };
 
   return (
-    <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-lg border bg-white dark:bg-gray-900 dark:border-gray-700 p-1 shadow-lg">
+    <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-lg border border-border bg-card p-1 shadow-lg">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="sm">
@@ -88,7 +88,7 @@ export function CanvasToolbar() {
         Note
       </Button>
 
-      <div className="mx-1 h-6 w-px bg-gray-200 dark:bg-gray-700" />
+      <div className="mx-1 h-6 w-px bg-border" />
 
       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => zoomIn()}>
         <ZoomIn className="h-4 w-4" />
@@ -102,13 +102,13 @@ export function CanvasToolbar() {
       <Button
         variant="ghost"
         size="icon"
-        className={`h-8 w-8 ${snapToGrid ? 'bg-blue-100 dark:bg-blue-900 text-blue-600' : ''}`}
+        className={`h-8 w-8 ${snapToGrid ? 'bg-accent text-accent-foreground' : ''}`}
         onClick={toggleSnapToGrid}
       >
         <Grid3x3 className="h-4 w-4" />
       </Button>
 
-      <div className="mx-1 h-6 w-px bg-gray-200 dark:bg-gray-700" />
+      <div className="mx-1 h-6 w-px bg-border" />
 
       <Button
         variant="ghost"
@@ -129,7 +129,7 @@ export function CanvasToolbar() {
         <Redo2 className="h-4 w-4" />
       </Button>
 
-      <div className="mx-1 h-6 w-px bg-gray-200 dark:bg-gray-700" />
+      <div className="mx-1 h-6 w-px bg-border" />
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

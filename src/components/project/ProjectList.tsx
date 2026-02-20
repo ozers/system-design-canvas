@@ -116,7 +116,7 @@ export function ProjectList() {
 
       {projects.length > 0 && (
         <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -128,14 +128,14 @@ export function ProjectList() {
 
       {sorted.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="mb-6 flex items-center justify-center gap-3 text-gray-300 dark:text-gray-700">
+          <div className="mb-6 flex items-center justify-center gap-3 text-muted-foreground/50">
             <Server className="h-10 w-10" />
             <ArrowRight className="h-6 w-6" />
             <Database className="h-10 w-10" />
             <ArrowRight className="h-6 w-6" />
             <Layers className="h-10 w-10" />
           </div>
-          <p className="text-lg font-medium text-gray-900 dark:text-gray-100">No projects yet</p>
+          <p className="text-lg font-medium text-foreground">No projects yet</p>
           <p className="mt-1 text-sm text-muted-foreground">
             Create your first system design canvas
           </p>

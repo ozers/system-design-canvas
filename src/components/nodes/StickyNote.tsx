@@ -10,7 +10,6 @@ interface StickyNoteData {
   nodeType: 'note';
   description?: string;
   techStack: string[];
-  color?: string;
 }
 
 type StickyNoteProps = NodeProps & { data: StickyNoteData };
@@ -28,23 +27,20 @@ function StickyNoteComponent({ id, data, selected }: StickyNoteProps) {
 
   return (
     <div
-      className={`min-w-[180px] max-w-[280px] rounded-md p-3 shadow-md transition-shadow ${
-        selected ? 'ring-2 ring-blue-400 shadow-lg' : ''
+      className={`min-w-[180px] max-w-[280px] rounded-md p-3 shadow-md transition-shadow bg-amber-100 dark:bg-amber-900/50 border border-amber-200 dark:border-amber-700 ${
+        selected ? 'ring-2 ring-ring shadow-lg' : ''
       }`}
-      style={{
-        backgroundColor: data.color || '#fef3c7',
-      }}
     >
       {selected && (
         <button
-          className="absolute -right-2 -top-2 rounded-full bg-white dark:bg-gray-800 shadow p-0.5 hover:bg-red-100"
+          className="absolute -right-2 -top-2 rounded-full bg-card shadow p-0.5 hover:bg-destructive/10"
           onClick={() => deleteNode(id)}
         >
-          <X className="h-3 w-3 text-gray-500" />
+          <X className="h-3 w-3 text-muted-foreground" />
         </button>
       )}
       <textarea
-        className="w-full resize-none bg-transparent text-sm text-gray-800 placeholder-gray-400 outline-none"
+        className="w-full resize-none bg-transparent text-sm text-foreground placeholder-muted-foreground outline-none"
         rows={3}
         value={data.label}
         onChange={handleChange}

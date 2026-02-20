@@ -47,7 +47,7 @@ function CanvasInner({ projectId }: { projectId: string }) {
   const deleteEdge = useCanvasStore((s) => s.deleteEdge);
   const pushHistory = useCanvasStore((s) => s.pushHistory);
 
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, fitView } = useReactFlow();
   useAutoSave();
   useKeyboardShortcuts();
 
@@ -69,6 +69,10 @@ function CanvasInner({ projectId }: { projectId: string }) {
         project.edges as SystemEdgeType[],
         project.viewport
       );
+      // Center the view on nodes after React Flow renders them
+      requestAnimationFrame(() => {
+        fitView({ padding: 0.15, duration: 200 });
+      });
     }
   }, [projectId, loaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -143,46 +147,52 @@ function CanvasInner({ projectId }: { projectId: string }) {
   );
 
   const currentProject = projects.find((p) => p.id === projectId);
+  const selectedNodeId = useCanvasStore((s) => s.selectedNodeId);
+  const selectedNode = nodes.find((n) => n.id === selectedNodeId);
+  const isEditorOpen = !!selectedNode;
 
   return (
     <div className="flex h-screen w-screen flex-col">
       <Header projectName={currentProject?.name} showBack />
-      <div className="relative flex-1">
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        onNodeClick={onNodeClick}
-        onPaneClick={onPaneClick}
-        onNodesDelete={onNodesDelete}
-        onEdgesDelete={onEdgesDelete}
-        onMoveEnd={onMoveEnd}
-        onNodeDragStop={onNodeDragStop}
-        onDragOver={onDragOver}
-        onDrop={onDrop}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        defaultViewport={viewport}
-        defaultEdgeOptions={{ type: 'system' }}
-        fitView={nodes.length === 0}
-        snapToGrid={snapToGrid}
-        snapGrid={[20, 20]}
-        deleteKeyCode={['Backspace', 'Delete']}
-        className="bg-gray-50 dark:bg-gray-950"
-      >
-        <Background />
-        <Controls position="top-right" />
-        <MiniMap
-          position="bottom-right"
-          className="!bg-white !border !border-gray-200 !shadow-sm"
-          maskColor="rgba(0, 0, 0, 0.1)"
-        />
-        <CanvasToolbar />
-      </ReactFlow>
-      <NodePalette />
-      <NodeEditor />
+      <div className="flex flex-1 overflow-hidden">
+        <div className="relative flex-1">
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onNodeClick={onNodeClick}
+            onPaneClick={onPaneClick}
+            onNodesDelete={onNodesDelete}
+            onEdgesDelete={onEdgesDelete}
+            onMoveEnd={onMoveEnd}
+            onNodeDragStop={onNodeDragStop}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
+            nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
+            defaultViewport={viewport}
+            defaultEdgeOptions={{ type: 'system' }}
+            fitView
+            fitViewOptions={{ padding: 0.15 }}
+            snapToGrid={snapToGrid}
+            snapGrid={[20, 20]}
+            deleteKeyCode={['Backspace', 'Delete']}
+            className="bg-background"
+          >
+            <Background />
+            <Controls position="top-right" />
+            <MiniMap
+              position="bottom-right"
+              className="!bg-card !border !border-border !shadow-sm"
+              maskColor="rgba(0, 0, 0, 0.1)"
+            />
+            <CanvasToolbar />
+          </ReactFlow>
+          <NodePalette />
+        </div>
+        {isEditorOpen && <NodeEditor />}
       </div>
     </div>
   );

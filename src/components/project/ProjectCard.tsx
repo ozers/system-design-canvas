@@ -76,7 +76,7 @@ export function ProjectCard({ project, onRename, onDuplicate, onExport, onDelete
               Export JSON
             </DropdownMenuItem>
             <DropdownMenuItem
-              className="text-red-600"
+              className="text-destructive"
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete(project.id);

@@ -27,7 +27,7 @@ export function TemplateSelector() {
   return (
     <div>
       <div className="mb-4 flex items-center gap-2">
-        <LayoutTemplate className="h-5 w-5 text-gray-500" />
+        <LayoutTemplate className="h-5 w-5 text-muted-foreground" />
         <h3 className="font-semibold text-lg">Start from a Template</h3>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

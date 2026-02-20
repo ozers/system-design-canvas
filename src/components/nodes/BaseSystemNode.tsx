@@ -20,17 +20,18 @@ function BaseSystemNodeComponent({ id, data, selected }: BaseSystemNodeProps) {
         'min-w-[160px] rounded-lg border-2 px-4 py-3 shadow-sm transition-shadow',
         config.bgColor,
         config.borderColor,
-        'dark:bg-opacity-20 dark:border-opacity-50',
-        selected && 'shadow-md ring-2 ring-blue-400'
+        config.darkBgColor,
+        config.darkBorderColor,
+        selected && 'shadow-md ring-2 ring-ring'
       )}
       onDoubleClick={() => setSelectedNodeId(id)}
     >
-      <Handle type="target" position={Position.Top} className="!bg-gray-400 dark:!bg-gray-500 !w-3 !h-3" />
-      <Handle type="target" position={Position.Left} id="left" className="!bg-gray-400 dark:!bg-gray-500 !w-3 !h-3" />
+      <Handle type="target" position={Position.Top} className="!bg-muted-foreground !w-3 !h-3" />
+      <Handle type="target" position={Position.Left} id="left" className="!bg-muted-foreground !w-3 !h-3" />
 
       <div className="flex items-center gap-2">
         <Icon className={cn('h-5 w-5', config.color)} />
-        <span className="font-medium text-sm text-gray-900 dark:text-gray-100">{data.label}</span>
+        <span className="font-medium text-sm text-foreground">{data.label}</span>
       </div>
 
       {data.techStack.length > 0 && (
@@ -38,7 +39,7 @@ function BaseSystemNodeComponent({ id, data, selected }: BaseSystemNodeProps) {
           {data.techStack.map((tech) => (
             <span
               key={tech}
-              className="rounded bg-white/60 dark:bg-black/30 px-1.5 py-0.5 text-[10px] text-gray-600 dark:text-gray-300"
+              className="rounded bg-background/60 px-1.5 py-0.5 text-[10px] text-muted-foreground"
             >
               {tech}
             </span>
@@ -47,11 +48,11 @@ function BaseSystemNodeComponent({ id, data, selected }: BaseSystemNodeProps) {
       )}
 
       {data.description && (
-        <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2">{data.description}</p>
+        <p className="mt-1 text-[11px] text-muted-foreground line-clamp-2">{data.description}</p>
       )}
 
-      <Handle type="source" position={Position.Bottom} className="!bg-gray-400 dark:!bg-gray-500 !w-3 !h-3" />
-      <Handle type="source" position={Position.Right} id="right" className="!bg-gray-400 dark:!bg-gray-500 !w-3 !h-3" />
+      <Handle type="source" position={Position.Bottom} className="!bg-muted-foreground !w-3 !h-3" />
+      <Handle type="source" position={Position.Right} id="right" className="!bg-muted-foreground !w-3 !h-3" />
     </div>
   );
 }

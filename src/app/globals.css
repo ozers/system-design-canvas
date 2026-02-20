@@ -124,3 +124,56 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* React Flow dark mode overrides */
+.dark .react-flow__controls-button {
+  --xy-controls-button-background-color-default: #1f2937;
+  --xy-controls-button-border-color-default: #374151;
+  --xy-controls-button-color-default: #e5e7eb;
+}
+
+.dark .react-flow__controls-button:hover {
+  --xy-controls-button-background-color-hover-default: #374151;
+  --xy-controls-button-color-hover-default: #fff;
+}
+
+.dark .react-flow__controls {
+  --xy-controls-box-shadow-default: 0 0 2px 1px rgba(0, 0, 0, 0.3);
+}
+
+.dark .react-flow__minimap {
+  --xy-minimap-background-color-default: #111827;
+}
+
+.dark .react-flow__minimap-mask {
+  --xy-minimap-mask-background-color-default: rgba(17, 24, 39, 0.7);
+}
+
+.dark .react-flow__minimap-node {
+  --xy-minimap-node-background-color-default: #374151;
+}
+
+.dark .react-flow__attribution {
+  --xy-attribution-background-color-default: rgba(17, 24, 39, 0.5);
+}
+
+.dark .react-flow__attribution a {
+  color: #6b7280;
+}
+
+.dark .react-flow__handle {
+  --xy-handle-background-color-default: #9ca3af;
+  --xy-handle-border-color-default: #1f2937;
+}
+
+.dark .react-flow__edge-path {
+  stroke: #6b7280;
+}
+
+.dark .react-flow__background pattern line {
+  stroke: #1f2937 !important;
+}
+
+.dark .react-flow__background pattern circle {
+  fill: #374151 !important;
+}

@@ -57,7 +57,7 @@ function SystemEdgeComponent({
             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
             pointerEvents: 'all',
           }}
-          className="flex items-center gap-1 rounded bg-white dark:bg-gray-800 dark:text-gray-200 px-2 py-0.5 text-[11px] font-medium shadow-sm border border-gray-200 dark:border-gray-600"
+          className="flex items-center gap-1 rounded bg-popover text-popover-foreground px-2 py-0.5 text-[11px] font-medium shadow-sm border border-border"
         >
           {label}
           {selected && (

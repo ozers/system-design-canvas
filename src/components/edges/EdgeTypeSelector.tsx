@@ -38,8 +38,8 @@ export function EdgeTypeSelector({ edgeId, currentType, currentLabel }: EdgeType
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button className="rounded p-0.5 hover:bg-gray-100 transition-colors">
-          <Settings2 className="h-3 w-3 text-gray-500" />
+        <button className="rounded p-0.5 hover:bg-accent transition-colors">
+          <Settings2 className="h-3 w-3 text-muted-foreground" />
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-56 p-3" side="top">
@@ -55,8 +55,8 @@ export function EdgeTypeSelector({ edgeId, currentType, currentLabel }: EdgeType
                     onClick={() => handleTypeSelect(type)}
                     className={`flex items-center gap-1.5 rounded px-2 py-1 text-xs transition-colors ${
                       currentType === type
-                        ? 'bg-gray-100 font-medium ring-1 ring-gray-300'
-                        : 'hover:bg-gray-50'
+                        ? 'bg-muted font-medium ring-1 ring-border'
+                        : 'hover:bg-accent'
                     }`}
                   >
                     <span

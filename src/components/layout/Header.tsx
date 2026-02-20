@@ -14,7 +14,7 @@ export function Header({ projectName, showBack }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <header className="border-b bg-white dark:bg-gray-900 dark:border-gray-800">
+    <header className="border-b border-border bg-card">
       <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-6">
         {showBack && (
           <Link href="/">
@@ -23,14 +23,14 @@ export function Header({ projectName, showBack }: HeaderProps) {
             </Button>
           </Link>
         )}
-        <Link href="/" className="flex items-center gap-2 font-semibold dark:text-white">
-          <Boxes className="h-5 w-5 text-blue-600" />
+        <Link href="/" className="flex items-center gap-2 font-semibold text-foreground">
+          <Boxes className="h-5 w-5 text-primary" />
           System Design Canvas
         </Link>
         {projectName && (
           <>
-            <span className="text-gray-300 dark:text-gray-600">/</span>
-            <span className="text-sm text-gray-600 dark:text-gray-400 truncate">{projectName}</span>
+            <span className="text-border">/</span>
+            <span className="text-sm text-muted-foreground truncate">{projectName}</span>
           </>
         )}
         <div className="ml-auto">

@@ -53,8 +53,8 @@ export function NodeEditor() {
   };
 
   return (
-    <div className="absolute right-0 top-0 z-20 h-full w-80 border-l bg-white dark:bg-gray-900 dark:border-gray-700 shadow-lg overflow-y-auto">
-      <div className="flex items-center justify-between border-b dark:border-gray-700 px-4 py-3">
+    <div className="h-full w-80 shrink-0 border-l border-border bg-card overflow-y-auto">
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center gap-2">
           <Icon className={`h-4 w-4 ${config.color}`} />
           <span className="font-medium text-sm">{config.label}</span>
@@ -91,7 +91,7 @@ export function NodeEditor() {
                   className={`flex items-center gap-1.5 rounded px-2 py-1.5 text-xs transition-colors ${
                     node.data.nodeType === type
                       ? `${c.bgColor} ${c.borderColor} border font-medium`
-                      : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                      : 'hover:bg-accent'
                   }`}
                 >
                   <TypeIcon className={`h-3.5 w-3.5 ${c.color}`} />
@@ -119,10 +119,10 @@ export function NodeEditor() {
             {node.data.techStack.map((tech, i) => (
               <span
                 key={i}
-                className="inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-800 px-2.5 py-0.5 text-xs"
+                className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs"
               >
                 {tech}
-                <button onClick={() => removeTech(i)} className="hover:text-red-500">
+                <button onClick={() => removeTech(i)} className="hover:text-destructive">
                   <X className="h-3 w-3" />
                 </button>
               </span>
@@ -142,7 +142,7 @@ export function NodeEditor() {
           </div>
         </div>
 
-        <div className="border-t dark:border-gray-700 pt-4">
+        <div className="border-t border-border pt-4">
           <Button variant="destructive" size="sm" className="w-full" onClick={handleDelete}>
             <Trash2 className="h-4 w-4 mr-2" />
             Delete Node

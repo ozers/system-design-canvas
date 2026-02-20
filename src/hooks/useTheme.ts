@@ -30,17 +30,6 @@ function getServerSnapshot(): Theme {
   return 'light';
 }
 
-function initTheme() {
-  if (typeof window === 'undefined') return;
-  const stored = localStorage.getItem(THEME_KEY);
-  if (stored === 'dark' || stored === 'light') {
-    currentTheme = stored;
-  } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    currentTheme = 'dark';
-  }
-  applyTheme(currentTheme);
-}
-
 function applyTheme(theme: Theme) {
   const root = document.documentElement;
   if (theme === 'dark') {
@@ -50,15 +39,20 @@ function applyTheme(theme: Theme) {
   }
 }
 
-// Initialize on module load (client only)
+// Read stored theme at module load (client only) — but DON'T touch the DOM
 if (typeof window !== 'undefined') {
-  initTheme();
+  const stored = localStorage.getItem(THEME_KEY);
+  if (stored === 'dark' || stored === 'light') {
+    currentTheme = stored;
+  } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    currentTheme = 'dark';
+  }
 }
 
 export function useTheme() {
   const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-  // Keep DOM in sync
+  // Apply class to DOM only in effect (after hydration)
   useEffect(() => {
     applyTheme(theme);
     localStorage.setItem(THEME_KEY, theme);

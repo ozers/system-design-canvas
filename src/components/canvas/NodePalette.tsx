@@ -20,7 +20,7 @@ export function NodePalette() {
         <Button
           variant="outline"
           size="icon"
-          className="h-9 w-9 bg-white dark:bg-gray-900 shadow-lg"
+          className="h-9 w-9 bg-card shadow-lg"
           onClick={() => setCollapsed(false)}
         >
           <PanelLeftOpen className="h-4 w-4" />
@@ -30,9 +30,9 @@ export function NodePalette() {
   }
 
   return (
-    <div className="absolute left-4 top-4 z-10 w-48 rounded-lg border bg-white dark:bg-gray-900 dark:border-gray-700 p-3 shadow-lg">
+    <div className="absolute left-4 top-4 z-10 w-48 rounded-lg border border-border bg-card p-3 shadow-lg">
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           Components
         </h3>
         <Button
@@ -53,10 +53,10 @@ export function NodePalette() {
               key={type}
               draggable
               onDragStart={(e) => onDragStart(e, type)}
-              className="flex cursor-grab items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 active:cursor-grabbing"
+              className="flex cursor-grab items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-accent active:cursor-grabbing"
             >
               <Icon className={`h-4 w-4 ${config.color}`} />
-              <span className="text-gray-700 dark:text-gray-300">{config.label}</span>
+              <span className="text-foreground">{config.label}</span>
             </div>
           );
         })}

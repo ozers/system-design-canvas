@@ -17,6 +17,8 @@ export interface NodeTypeConfig {
   color: string;
   bgColor: string;
   borderColor: string;
+  darkBgColor: string;
+  darkBorderColor: string;
   defaultTechStack: string[];
 }
 
@@ -27,6 +29,8 @@ export const NODE_REGISTRY: Record<SystemNodeType, NodeTypeConfig> = {
     color: 'text-blue-600',
     bgColor: 'bg-blue-50',
     borderColor: 'border-blue-300',
+    darkBgColor: 'dark:bg-blue-950',
+    darkBorderColor: 'dark:border-blue-700',
     defaultTechStack: [],
   },
   database: {
@@ -35,6 +39,8 @@ export const NODE_REGISTRY: Record<SystemNodeType, NodeTypeConfig> = {
     color: 'text-green-600',
     bgColor: 'bg-green-50',
     borderColor: 'border-green-300',
+    darkBgColor: 'dark:bg-green-950',
+    darkBorderColor: 'dark:border-green-700',
     defaultTechStack: ['PostgreSQL'],
   },
   cache: {
@@ -43,6 +49,8 @@ export const NODE_REGISTRY: Record<SystemNodeType, NodeTypeConfig> = {
     color: 'text-amber-600',
     bgColor: 'bg-amber-50',
     borderColor: 'border-amber-300',
+    darkBgColor: 'dark:bg-amber-950',
+    darkBorderColor: 'dark:border-amber-700',
     defaultTechStack: ['Redis'],
   },
   queue: {
@@ -51,6 +59,8 @@ export const NODE_REGISTRY: Record<SystemNodeType, NodeTypeConfig> = {
     color: 'text-pink-600',
     bgColor: 'bg-pink-50',
     borderColor: 'border-pink-300',
+    darkBgColor: 'dark:bg-pink-950',
+    darkBorderColor: 'dark:border-pink-700',
     defaultTechStack: ['RabbitMQ'],
   },
   'load-balancer': {
@@ -59,6 +69,8 @@ export const NODE_REGISTRY: Record<SystemNodeType, NodeTypeConfig> = {
     color: 'text-indigo-600',
     bgColor: 'bg-indigo-50',
     borderColor: 'border-indigo-300',
+    darkBgColor: 'dark:bg-indigo-950',
+    darkBorderColor: 'dark:border-indigo-700',
     defaultTechStack: ['Nginx'],
   },
   client: {
@@ -67,6 +79,8 @@ export const NODE_REGISTRY: Record<SystemNodeType, NodeTypeConfig> = {
     color: 'text-purple-600',
     bgColor: 'bg-purple-50',
     borderColor: 'border-purple-300',
+    darkBgColor: 'dark:bg-purple-950',
+    darkBorderColor: 'dark:border-purple-700',
     defaultTechStack: [],
   },
   cdn: {
@@ -75,6 +89,8 @@ export const NODE_REGISTRY: Record<SystemNodeType, NodeTypeConfig> = {
     color: 'text-teal-600',
     bgColor: 'bg-teal-50',
     borderColor: 'border-teal-300',
+    darkBgColor: 'dark:bg-teal-950',
+    darkBorderColor: 'dark:border-teal-700',
     defaultTechStack: ['CloudFront'],
   },
   'api-gateway': {
@@ -83,6 +99,8 @@ export const NODE_REGISTRY: Record<SystemNodeType, NodeTypeConfig> = {
     color: 'text-red-600',
     bgColor: 'bg-red-50',
     borderColor: 'border-red-300',
+    darkBgColor: 'dark:bg-red-950',
+    darkBorderColor: 'dark:border-red-700',
     defaultTechStack: [],
   },
 };
