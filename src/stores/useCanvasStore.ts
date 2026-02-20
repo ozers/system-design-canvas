@@ -42,6 +42,18 @@ interface CanvasStore {
   snapToGrid: boolean;
   toggleSnapToGrid: () => void;
 
+  // Background
+  backgroundVariant: 'dots' | 'lines' | 'cross' | 'none';
+  cycleBackground: () => void;
+
+  // Presentation mode
+  presentationMode: boolean;
+  togglePresentationMode: () => void;
+
+  // Save status
+  saveStatus: 'idle' | 'saving' | 'saved';
+  setSaveStatus: (status: 'idle' | 'saving' | 'saved') => void;
+
   // Actions
   initCanvas: (projectId: string, nodes: SystemNode[], edges: SystemEdge[], viewport: Viewport) => void;
   onNodesChange: (changes: NodeChange<SystemNode>[]) => void;
@@ -76,6 +88,16 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   setPendingEdge: (pending) => set({ pendingEdge: pending }),
   snapToGrid: false,
   toggleSnapToGrid: () => set((state) => ({ snapToGrid: !state.snapToGrid })),
+  backgroundVariant: 'dots' as const,
+  cycleBackground: () => set((state) => {
+    const variants = ['dots', 'lines', 'cross', 'none'] as const;
+    const idx = variants.indexOf(state.backgroundVariant);
+    return { backgroundVariant: variants[(idx + 1) % variants.length] };
+  }),
+  presentationMode: false,
+  togglePresentationMode: () => set((state) => ({ presentationMode: !state.presentationMode })),
+  saveStatus: 'idle' as const,
+  setSaveStatus: (status) => set({ saveStatus: status }),
 
   initCanvas: (projectId, nodes, edges, viewport) => {
     set({

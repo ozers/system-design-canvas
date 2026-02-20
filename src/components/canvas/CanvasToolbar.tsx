@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useReactFlow, useStore } from '@xyflow/react';
 import { useCanvasStore } from '@/stores/useCanvasStore';
 import { NODE_REGISTRY, getNodesByCategory } from '@/components/nodes/node-registry';
@@ -16,8 +17,10 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, ZoomIn, ZoomOut, Maximize, Undo2, Redo2, Download, Upload, ImageIcon, FileCode, FileJson, Grid3x3, StickyNote, LayoutDashboard } from 'lucide-react';
+import { Plus, ZoomIn, ZoomOut, Maximize, Undo2, Redo2, Download, Upload, ImageIcon, FileCode, FileJson, FileText, Grid3x3, StickyNote, LayoutDashboard, Circle, Columns3, Hash, EyeOff, Share2, Check, Presentation, Loader2, CheckCircle2 } from 'lucide-react';
 import { exportToPng, exportToSvg, exportToJson, importFromJson } from '@/lib/export';
+import { encodeCanvasToUrl } from '@/lib/share';
+import { exportToMermaid } from '@/lib/mermaid';
 import { getLayoutedElements } from '@/lib/auto-layout';
 
 let nodeCounter = 0;
@@ -37,6 +40,10 @@ export function CanvasToolbar() {
   const historyLength = useCanvasStore((s) => s.history.length);
   const snapToGrid = useCanvasStore((s) => s.snapToGrid);
   const toggleSnapToGrid = useCanvasStore((s) => s.toggleSnapToGrid);
+  const backgroundVariant = useCanvasStore((s) => s.backgroundVariant);
+  const cycleBackground = useCanvasStore((s) => s.cycleBackground);
+  const togglePresentationMode = useCanvasStore((s) => s.togglePresentationMode);
+  const saveStatus = useCanvasStore((s) => s.saveStatus);
 
   const undoCount = historyIndex;
   const redoCount = historyLength - 1 - historyIndex;
@@ -67,6 +74,23 @@ export function CanvasToolbar() {
     const { nodes: layoutedNodes } = getLayoutedElements(nodes, edges);
     setNodes(layoutedNodes);
     requestAnimationFrame(() => fitView({ padding: 0.15, duration: 300 }));
+  };
+
+  const [shareIcon, setShareIcon] = useState<'share' | 'check'>('share');
+  const [mermaidCopied, setMermaidCopied] = useState(false);
+
+  const handleShare = () => {
+    const url = encodeCanvasToUrl(nodes, edges);
+    navigator.clipboard.writeText(url);
+    setShareIcon('check');
+    setTimeout(() => setShareIcon('share'), 2000);
+  };
+
+  const handleMermaidExport = () => {
+    const mermaid = exportToMermaid(nodes, edges);
+    navigator.clipboard.writeText(mermaid);
+    setMermaidCopied(true);
+    setTimeout(() => setMermaidCopied(false), 2000);
   };
 
   const handleImportJson = async () => {
@@ -200,6 +224,23 @@ export function CanvasToolbar() {
               variant="ghost"
               size="icon"
               className="h-8 w-8"
+              onClick={cycleBackground}
+              aria-label="Toggle background"
+            >
+              {backgroundVariant === 'dots' && <Circle className="h-4 w-4" />}
+              {backgroundVariant === 'lines' && <Columns3 className="h-4 w-4" />}
+              {backgroundVariant === 'cross' && <Hash className="h-4 w-4" />}
+              {backgroundVariant === 'none' && <EyeOff className="h-4 w-4" />}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Background: {backgroundVariant}</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
               onClick={handleAutoLayout}
               disabled={nodes.length === 0}
               aria-label="Auto layout"
@@ -255,6 +296,23 @@ export function CanvasToolbar() {
 
         <div className="mx-1 h-6 w-px bg-border" />
 
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="flex items-center gap-1 px-1.5 text-[10px] text-muted-foreground cursor-default tabular-nums">
+              {nodes.length}N &middot; {edges.length}E
+              {saveStatus === 'saving' && <Loader2 className="h-3 w-3 animate-spin" />}
+              {saveStatus === 'saved' && <CheckCircle2 className="h-3 w-3 text-green-500" />}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>
+            {nodes.length} node{nodes.length !== 1 ? 's' : ''}, {edges.length} edge{edges.length !== 1 ? 's' : ''}
+            {saveStatus === 'saving' && ' — Saving...'}
+            {saveStatus === 'saved' && ' — Saved'}
+          </TooltipContent>
+        </Tooltip>
+
+        <div className="mx-1 h-6 w-px bg-border" />
+
         <DropdownMenu>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -281,6 +339,10 @@ export function CanvasToolbar() {
               <FileJson className="h-4 w-4 mr-2" />
               JSON
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleMermaidExport}>
+              <FileText className="h-4 w-4 mr-2" />
+              {mermaidCopied ? 'Copied!' : 'Mermaid (clipboard)'}
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -291,6 +353,23 @@ export function CanvasToolbar() {
             </Button>
           </TooltipTrigger>
           <TooltipContent>Import JSON</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleShare} disabled={nodes.length === 0} aria-label="Share">
+              {shareIcon === 'check' ? <Check className="h-4 w-4 text-green-500" /> : <Share2 className="h-4 w-4" />}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{shareIcon === 'check' ? 'Link Copied!' : 'Share Link'}</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={togglePresentationMode} aria-label="Presentation mode">
+              <Presentation className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Present (P)</TooltipContent>
         </Tooltip>
       </div>
     </TooltipProvider>

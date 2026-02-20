@@ -9,6 +9,8 @@ export function useKeyboardShortcuts() {
   const setSelectedNodeId = useCanvasStore((s) => s.setSelectedNodeId);
   const copyNode = useCanvasStore((s) => s.copyNode);
   const pasteNode = useCanvasStore((s) => s.pasteNode);
+  const presentationMode = useCanvasStore((s) => s.presentationMode);
+  const togglePresentationMode = useCanvasStore((s) => s.togglePresentationMode);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -47,14 +49,24 @@ export function useKeyboardShortcuts() {
         return;
       }
 
-      // Escape: deselect
+      // Presentation mode: P to toggle, Escape to exit
+      if (e.key === 'p' && !isMod) {
+        togglePresentationMode();
+        return;
+      }
+
+      // Escape: exit presentation mode or deselect
       if (e.key === 'Escape') {
-        setSelectedNodeId(null);
+        if (presentationMode) {
+          togglePresentationMode();
+        } else {
+          setSelectedNodeId(null);
+        }
         return;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [undo, redo, setSelectedNodeId, copyNode, pasteNode]);
+  }, [undo, redo, setSelectedNodeId, copyNode, pasteNode, presentationMode, togglePresentationMode]);
 }

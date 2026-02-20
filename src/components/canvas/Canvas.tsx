@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useRef, type DragEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
 import {
   ReactFlow,
   Background,
+  BackgroundVariant,
   Controls,
   MiniMap,
   SelectionMode,
@@ -31,6 +32,7 @@ import { Header } from '@/components/layout/Header';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { OnboardingOverlay } from './OnboardingOverlay';
+import { CanvasContextMenu, type ContextMenuState } from './CanvasContextMenu';
 import { NODE_REGISTRY } from '@/components/nodes/node-registry';
 import type { SystemNode, SystemEdge as SystemEdgeType, SystemNodeType, SystemNodeData } from '@/types';
 
@@ -79,6 +81,9 @@ function CanvasInner({ projectId }: { projectId: string }) {
   const setSelectedNodeId = useCanvasStore((s) => s.setSelectedNodeId);
   const initCanvas = useCanvasStore((s) => s.initCanvas);
   const snapToGrid = useCanvasStore((s) => s.snapToGrid);
+  const backgroundVariant = useCanvasStore((s) => s.backgroundVariant);
+  const presentationMode = useCanvasStore((s) => s.presentationMode);
+  const togglePresentationMode = useCanvasStore((s) => s.togglePresentationMode);
   const addNode = useCanvasStore((s) => s.addNode);
   const deleteNode = useCanvasStore((s) => s.deleteNode);
   const deleteEdge = useCanvasStore((s) => s.deleteEdge);
@@ -92,6 +97,10 @@ function CanvasInner({ projectId }: { projectId: string }) {
   const { screenToFlowPosition, fitView } = useReactFlow();
   useAutoSave();
   useKeyboardShortcuts();
+
+  // Context menu + copy/paste
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const [clipboard, setClipboard] = useState<SystemNode | null>(null);
 
   const projects = useProjectStore((s) => s.projects);
   const loadProjects = useProjectStore((s) => s.loadProjects);
@@ -127,6 +136,7 @@ function CanvasInner({ projectId }: { projectId: string }) {
 
   const onPaneClick = useCallback(() => {
     setSelectedNodeId(null);
+    setContextMenu(null);
   }, [setSelectedNodeId]);
 
   const onNodesDelete = useCallback(
@@ -240,6 +250,55 @@ function CanvasInner({ projectId }: { projectId: string }) {
     [screenToFlowPosition, addNode]
   );
 
+  const onPaneContextMenu = useCallback((event: MouseEvent | React.MouseEvent) => {
+    event.preventDefault();
+    setContextMenu({ x: event.clientX, y: event.clientY });
+  }, []);
+
+  const onNodeContextMenu = useCallback((event: React.MouseEvent, node: SystemNode) => {
+    event.preventDefault();
+    setContextMenu({ x: event.clientX, y: event.clientY, nodeId: node.id });
+  }, []);
+
+  const handleCopy = useCallback((nodeId: string) => {
+    const node = nodes.find((n) => n.id === nodeId);
+    if (node) setClipboard(node);
+  }, [nodes]);
+
+  const handlePaste = useCallback((screenX: number, screenY: number) => {
+    if (!clipboard) return;
+    const position = screenToFlowPosition({ x: screenX, y: screenY });
+    addNode({
+      id: `node-${Date.now()}`,
+      type: clipboard.type,
+      position,
+      ...(clipboard.type === 'group' ? { style: { width: 300, height: 200 } } : {}),
+      data: { ...clipboard.data },
+    });
+  }, [clipboard, screenToFlowPosition, addNode]);
+
+  // Ctrl+C / Ctrl+V keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      const selectedId = useCanvasStore.getState().selectedNodeId;
+      if ((e.metaKey || e.ctrlKey) && e.key === 'c' && selectedId) {
+        const node = useCanvasStore.getState().nodes.find((n) => n.id === selectedId);
+        if (node) setClipboard(node);
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'v' && clipboard) {
+        // Paste at center of viewport
+        const el = document.querySelector('.react-flow');
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          handlePaste(rect.left + rect.width / 2, rect.top + rect.height / 2);
+        }
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [clipboard, handlePaste]);
+
   const currentProject = projects.find((p) => p.id === projectId);
   const selectedNodeId = useCanvasStore((s) => s.selectedNodeId);
   const selectedNode = nodes.find((n) => n.id === selectedNodeId);
@@ -247,7 +306,7 @@ function CanvasInner({ projectId }: { projectId: string }) {
 
   return (
     <div className="flex h-screen w-screen flex-col">
-      <Header projectName={currentProject?.name} showBack />
+      {!presentationMode && <Header projectName={currentProject?.name} showBack />}
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1">
           <ReactFlow
@@ -268,6 +327,8 @@ function CanvasInner({ projectId }: { projectId: string }) {
             onNodeDragStop={onNodeDragStop}
             onDragOver={onDragOver}
             onDrop={onDrop}
+            onPaneContextMenu={onPaneContextMenu}
+            onNodeContextMenu={onNodeContextMenu}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             defaultViewport={viewport}
@@ -280,20 +341,45 @@ function CanvasInner({ projectId }: { projectId: string }) {
             deleteKeyCode={['Backspace', 'Delete']}
             className="bg-background"
           >
-            <Background />
-            <Controls position="top-right" />
-            <MiniMap
-              position="bottom-right"
-              className="!bg-card !border !border-border !shadow-sm minimap-mask"
-              nodeColor={getMinimapNodeColor}
-            />
-            <CanvasToolbar />
+            {backgroundVariant !== 'none' && (
+              <Background variant={
+                backgroundVariant === 'dots' ? BackgroundVariant.Dots :
+                backgroundVariant === 'lines' ? BackgroundVariant.Lines :
+                BackgroundVariant.Cross
+              } />
+            )}
+            {!presentationMode && <Controls position="top-right" />}
+            {!presentationMode && (
+              <MiniMap
+                position="bottom-right"
+                className="!bg-card !border !border-border !shadow-sm minimap-mask"
+                nodeColor={getMinimapNodeColor}
+              />
+            )}
+            {!presentationMode && <CanvasToolbar />}
           </ReactFlow>
-          <NodePalette />
-          <ConnectionTypePicker />
-          <OnboardingOverlay />
+          {!presentationMode && <NodePalette />}
+          {!presentationMode && <ConnectionTypePicker />}
+          {!presentationMode && <OnboardingOverlay />}
+          {presentationMode && (
+            <button
+              onClick={togglePresentationMode}
+              className="absolute top-4 right-4 z-10 rounded-lg border border-border bg-card/80 px-3 py-1.5 text-xs text-muted-foreground shadow-sm opacity-0 hover:opacity-100 transition-opacity"
+            >
+              Press Esc to exit
+            </button>
+          )}
+          {contextMenu && (
+            <CanvasContextMenu
+              menu={contextMenu}
+              onClose={() => setContextMenu(null)}
+              clipboard={clipboard}
+              onCopy={handleCopy}
+              onPaste={handlePaste}
+            />
+          )}
         </div>
-        {isEditorOpen && <NodeEditor />}
+        {isEditorOpen && !presentationMode && <NodeEditor />}
       </div>
     </div>
   );
