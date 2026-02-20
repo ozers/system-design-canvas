@@ -33,8 +33,10 @@ function BaseSystemNodeComponent({ id, data, selected }: BaseSystemNodeProps) {
         lineClassName="!border-primary"
         handleClassName="!w-2 !h-2 !bg-primary !border-primary"
       />
-      <Handle type="target" position={Position.Top} className="!bg-muted-foreground !w-3 !h-3" />
-      <Handle type="target" position={Position.Left} id="left" className="!bg-muted-foreground !w-3 !h-3" />
+      <Handle type="target" id="top-target" position={Position.Top} className="!bg-muted-foreground !w-3 !h-3" />
+      <Handle type="source" id="top-source" position={Position.Top} className="!bg-muted-foreground !w-3 !h-3 !opacity-0" />
+      <Handle type="target" id="left-target" position={Position.Left} className="!bg-muted-foreground !w-3 !h-3" />
+      <Handle type="source" id="left-source" position={Position.Left} className="!bg-muted-foreground !w-3 !h-3 !opacity-0" />
 
       <div className="flex items-center gap-2">
         <Icon className={cn('h-5 w-5', config.color)} />
@@ -58,8 +60,10 @@ function BaseSystemNodeComponent({ id, data, selected }: BaseSystemNodeProps) {
         <p className="mt-1 text-[11px] text-muted-foreground line-clamp-2">{data.description}</p>
       )}
 
-      <Handle type="source" position={Position.Bottom} className="!bg-muted-foreground !w-3 !h-3" />
-      <Handle type="source" position={Position.Right} id="right" className="!bg-muted-foreground !w-3 !h-3" />
+      <Handle type="source" id="bottom-source" position={Position.Bottom} className="!bg-muted-foreground !w-3 !h-3" />
+      <Handle type="target" id="bottom-target" position={Position.Bottom} className="!bg-muted-foreground !w-3 !h-3 !opacity-0" />
+      <Handle type="source" id="right-source" position={Position.Right} className="!bg-muted-foreground !w-3 !h-3" />
+      <Handle type="target" id="right-target" position={Position.Right} className="!bg-muted-foreground !w-3 !h-3 !opacity-0" />
     </div>
   );
 }
