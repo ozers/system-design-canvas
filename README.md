@@ -9,10 +9,14 @@
 [![React Flow](https://img.shields.io/badge/React_Flow-12-ff0072)](https://reactflow.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6)](https://typescriptlang.org)
 
+[**Live Demo**](https://system-design-canvas-one.vercel.app)
+
 A free, open-source visual tool for sketching system architectures.
 Drop components, wire them together, see your design take shape — all in the browser.
 
 No sign-up. No servers. No data leaving your machine.
+
+![System Design Canvas — Architecture diagram with drag-and-drop components](public/screenshots/canvas-light.png)
 
 </div>
 
@@ -36,6 +40,33 @@ It's **opinionated by design**. Instead of a blank canvas with infinite shapes, 
 - **Dark mode** — Easy on the eyes, with soft background variants
 - **Keyboard shortcuts** — Press `?` to see them all
 - **100% client-side** — localStorage persistence, works offline
+
+## Screenshots
+
+<details>
+<summary>Dashboard — project list & templates</summary>
+
+| Light | Dark |
+|-------|------|
+| ![Dashboard light mode](public/screenshots/dashboard-light.png) | ![Dashboard dark mode](public/screenshots/dashboard-dark.png) |
+
+</details>
+
+<details>
+<summary>Canvas — drag-and-drop architecture editor</summary>
+
+| Light | Dark |
+|-------|------|
+| ![Canvas light mode](public/screenshots/canvas-light.png) | ![Canvas dark mode — Kubernetes Platform template](public/screenshots/canvas-dark.png) |
+
+</details>
+
+<details>
+<summary>Presentation mode</summary>
+
+![Presentation mode — clean fullscreen view](public/screenshots/presentation-light.png)
+
+</details>
 
 ## Quick Start
 

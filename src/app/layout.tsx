@@ -12,9 +12,62 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = "https://system-design-canvas-one.vercel.app";
+const title = "System Design Canvas — Visual System Architecture Tool";
+const description =
+  "Free, open-source tool for designing system architectures visually. " +
+  "Drag-and-drop services, databases, queues, caches, and more. " +
+  "9 templates, dark mode, export to PNG/SVG/Mermaid. No sign-up, runs 100% in the browser.";
+
 export const metadata: Metadata = {
-  title: "System Design Canvas",
-  description: "Design and visualize system architectures",
+  title: {
+    default: title,
+    template: "%s | System Design Canvas",
+  },
+  description,
+  keywords: [
+    "system design",
+    "system architecture",
+    "architecture diagram",
+    "system design tool",
+    "microservices diagram",
+    "software architecture",
+    "infrastructure diagram",
+    "react flow",
+    "open source",
+    "visual design tool",
+    "system design interview",
+    "architecture canvas",
+  ],
+  authors: [{ name: "ozers", url: siteUrl }],
+  creator: "ozers",
+  openGraph: {
+    type: "website",
+    title,
+    description,
+    url: siteUrl,
+    siteName: "System Design Canvas",
+    images: [
+      {
+        url: `${siteUrl}/screenshots/canvas-light.png`,
+        width: 1200,
+        height: 630,
+        alt: "System Design Canvas — Serverless Fullstack architecture diagram",
+      },
+    ],
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+    images: [`${siteUrl}/screenshots/canvas-light.png`],
+  },
+  metadataBase: new URL(siteUrl),
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 const themeScript = `
