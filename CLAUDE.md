@@ -2,7 +2,7 @@
 
 ## What is System Design Canvas
 
-System Design Canvas, yazılımcıların sistem mimarisi düşünmesi, planlaması ve görselleştirmesi için opinionated bir canvas aracıdır. Auth yok, backend yok, localStorage ile çalışır.
+System Design Canvas is an opinionated canvas tool for software engineers to think about, plan, and visualize system architectures. No auth, no backend — runs entirely on localStorage.
 
 ## Commands
 
@@ -19,37 +19,37 @@ npm run lint         # ESLint
 - Zustand (state management)
 - Tailwind CSS v4 + shadcn/ui
 - html-to-image (PNG/SVG export)
-- Zod (localStorage veri validasyonu)
-- lucide-react (ikonlar)
-- Backend yok, auth yok, veritabanı yok
+- Zod (localStorage data validation)
+- lucide-react (icons)
+- No backend, no auth, no database
 
 ## Architecture
 
 ### Data Flow
-- **localStorage** tek persistence katmanı — `system-design-canvas` key'i altında versiyonlu schema
+- **localStorage** is the only persistence layer — versioned schema under the `system-design-canvas` key
 - Auto-save: debounced 500ms + beforeunload
 - Path alias: `@/*` → `./src/*`
 
 ### State Management
-- **useProjectStore** — proje CRUD (loadProjects, createProject, deleteProject, renameProject, saveProject)
-- **useCanvasStore** — aktif canvas (nodes, edges, viewport, undo/redo, selectedNodeId)
-- Her mutasyonda localStorage'a yazar
-- React Flow **controlled mode** — Zustand tek source of truth
+- **useProjectStore** — project CRUD (loadProjects, createProject, deleteProject, renameProject, saveProject)
+- **useCanvasStore** — active canvas (nodes, edges, viewport, undo/redo, selectedNodeId)
+- Every mutation writes to localStorage
+- React Flow **controlled mode** — Zustand is the single source of truth
 
 ### Key Architecture Decisions
-1. **Tek custom node componenti**: BaseSystemNode tüm 8 node tipini render eder. Fark node-registry.ts'den gelir.
-2. **Tek custom edge componenti**: SystemEdge tüm 6 edge tipini render eder. Fark edge-registry.ts'den gelir.
-3. **React Flow controlled mode**: Nodes/edges Zustand'da, applyNodeChanges/applyEdgeChanges store içinde.
-4. **localStorage**: Tek key, versiyonlu schema, ~5MB limit = ~100 proje rahat.
-5. **Export**: html-to-image ile .react-flow div → PNG/SVG, 2x pixel ratio.
+1. **Single custom node component**: BaseSystemNode renders all node types. Differences come from node-registry.ts.
+2. **Single custom edge component**: SystemEdge renders all edge types. Differences come from edge-registry.ts.
+3. **React Flow controlled mode**: Nodes/edges live in Zustand, applyNodeChanges/applyEdgeChanges run inside the store.
+4. **localStorage**: Single key, versioned schema, ~5MB limit = ~100 projects comfortably.
+5. **Export**: html-to-image converts .react-flow div → PNG/SVG at 2x pixel ratio.
 
 ## Data Model
 
 ```typescript
-// 8 node tipi
+// Node types
 SystemNodeType: 'service' | 'database' | 'cache' | 'queue' | 'load-balancer' | 'client' | 'cdn' | 'api-gateway'
 
-// 6 edge tipi
+// Edge types
 SystemEdgeType: 'rest' | 'grpc' | 'websocket' | 'pub-sub' | 'tcp' | 'db-query'
 
 SystemNodeData { label, nodeType, description, techStack: string[] }
@@ -60,8 +60,8 @@ AppData { version: number, projects: Project[], lastOpenedProjectId }
 
 ## Node Registry
 
-| Tip | İkon | Renk | Varsayılan Tech |
-|-----|------|------|-----------------|
+| Type | Icon | Color | Default Tech |
+|------|------|-------|-------------|
 | service | Server | Blue | — |
 | database | Database | Green | PostgreSQL |
 | cache | Zap | Amber | Redis |
@@ -73,8 +73,8 @@ AppData { version: number, projects: Project[], lastOpenedProjectId }
 
 ## Edge Registry
 
-| Tip | Renk | Çizgi | Animasyon |
-|-----|------|-------|-----------|
+| Type | Color | Stroke | Animated |
+|------|-------|--------|----------|
 | rest | Blue | Solid | No |
 | grpc | Green | Solid | No |
 | websocket | Purple | Dash 5-5 | Yes |
@@ -88,84 +88,50 @@ AppData { version: number, projects: Project[], lastOpenedProjectId }
 src/
   app/
     layout.tsx              # Root layout
-    page.tsx                # Dashboard (proje listesi)
+    page.tsx                # Dashboard (project list)
     globals.css
     canvas/
       [id]/
-        page.tsx            # Canvas sayfası
+        page.tsx            # Canvas page
   components/
     canvas/
-      Canvas.tsx            # Ana React Flow wrapper + orchestrator
-      CanvasToolbar.tsx     # Alt toolbar (node ekle, zoom, export, undo/redo)
-      NodePalette.tsx       # Sol sidebar — sürüklenebilir node tipleri
+      Canvas.tsx            # Main React Flow wrapper + orchestrator
+      CanvasToolbar.tsx     # Bottom toolbar (add node, zoom, export, undo/redo)
+      NodePalette.tsx       # Left sidebar — draggable node types
     nodes/
-      BaseSystemNode.tsx    # Tek custom node component (tüm tipler)
-      NodeEditor.tsx        # Sağ panel — node detay düzenleme
-      node-registry.ts      # Node tip tanımları (ikon, renk, varsayılanlar)
+      BaseSystemNode.tsx    # Single custom node component (all types)
+      NodeEditor.tsx        # Right panel — node detail editing
+      node-registry.ts      # Node type definitions (icon, color, defaults)
     edges/
-      SystemEdge.tsx        # Tek custom edge component (tüm tipler)
-      EdgeTypeSelector.tsx  # Bağlantı çekerken tip seçimi popover
-      edge-registry.ts      # Edge tip tanımları (renk, çizgi stili)
+      SystemEdge.tsx        # Single custom edge component (all types)
+      EdgeTypeSelector.tsx  # Connection type selection popover
+      edge-registry.ts      # Edge type definitions (color, stroke style)
     project/
       ProjectCard.tsx
       ProjectList.tsx
-      ProjectModal.tsx      # Oluştur/yeniden adlandır dialog
+      ProjectModal.tsx      # Create/rename dialog
       TemplateSelector.tsx
-    ui/                     # shadcn/ui bileşenleri
+    ui/                     # shadcn/ui components
     layout/
       Header.tsx
   stores/
-    useCanvasStore.ts       # Aktif canvas state
-    useProjectStore.ts      # Proje listesi CRUD
+    useCanvasStore.ts       # Active canvas state
+    useProjectStore.ts      # Project list CRUD
   hooks/
-    useAutoSave.ts          # Debounced localStorage kayıt
+    useAutoSave.ts          # Debounced localStorage save
     useKeyboardShortcuts.ts
   lib/
     storage.ts              # localStorage read/write/migrate
-    export.ts               # PNG/SVG export fonksiyonları
-    templates.ts            # Şablon verileri (pure data)
+    export.ts               # PNG/SVG export functions
+    templates.ts            # Template data (pure data)
     utils.ts                # cn() helper
   types/
-    index.ts                # Tüm tipler ve Zod şemaları
+    index.ts                # All types and Zod schemas
 ```
 
-## Templates (4)
+## Templates
 
-1. **Microservices** — Client > LB > API Gateway > 3 Service > 2 DB + Queue
+1. **Microservices** — Client > LB > API Gateway > 3 Services > 2 DBs + Queue
 2. **Monolith** — Client > LB > Monolith Service > DB + Cache
 3. **Event-Driven** — Producers > Event Bus > Consumers > DBs
 4. **Client-Server** — Client > CDN > API Server > DB + Cache
-
-## Implementation Order
-
-### Hafta 1: Core (Steps 1-9)
-1. ~~Project setup + deps + shadcn init~~ (DONE)
-2. `src/types/index.ts` — veri modeli + Zod schemas
-3. `node-registry.ts` + `edge-registry.ts`
-4. `src/lib/storage.ts` — localStorage katmanı
-5. `useProjectStore` + `useCanvasStore`
-6. `BaseSystemNode` + `SystemEdge` components
-7. `Canvas.tsx` — React Flow entegrasyonu
-8. Dashboard sayfası — proje listesi + oluştur/sil
-9. Auto-save hook'u
-
-### Hafta 2: Features + Polish (Steps 10-17)
-10. NodeEditor — node düzenleme paneli
-11. EdgeTypeSelector — bağlantı tipi seçimi
-12. NodePalette — drag-and-drop node ekleme
-13. Şablonlar (4 adet)
-14. Export (PNG/SVG)
-15. Undo/redo
-16. Keyboard shortcuts
-17. Landing/header polish
-
-## Verification Checklist
-1. `npm run build` — hatasız build
-2. `npm run lint` — hatasız lint
-3. Dashboard: proje oluştur, listele, sil, yeniden adlandır
-4. Canvas: node ekle (her 8 tip), taşı, düzenle, sil
-5. Canvas: edge çiz (her 6 tip), etiket düzenle, sil
-6. Şablon: her 4 şablondan proje oluştur
-7. Export: PNG ve SVG indir
-8. Undo/redo: 3+ işlem geri al, ileri al
-9. Sayfa yenile: tüm verinin localStorage'dan geri yüklendiğini doğrula
