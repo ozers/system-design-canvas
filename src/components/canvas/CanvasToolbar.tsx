@@ -17,8 +17,9 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, ZoomIn, ZoomOut, Maximize, Undo2, Redo2, Download, Upload, ImageIcon, FileCode, FileJson, FileText, Grid3x3, StickyNote, LayoutDashboard, Circle, Columns3, Hash, EyeOff, Share2, Check, Presentation, Loader2, CheckCircle2, Search } from 'lucide-react';
+import { Plus, ZoomIn, ZoomOut, Maximize, Undo2, Redo2, Download, Upload, ImageIcon, FileCode, FileJson, FileText, Grid3x3, StickyNote, LayoutDashboard, Circle, Columns3, Hash, EyeOff, Share2, Check, Presentation, Loader2, CheckCircle2, Search, Container } from 'lucide-react';
 import { exportToPng, exportToSvg, exportToJson, importFromJson } from '@/lib/export';
+import { importDockerCompose } from '@/lib/docker-compose';
 import { encodeCanvasToUrl } from '@/lib/share';
 import { exportToMermaid } from '@/lib/mermaid';
 import { getLayoutedElements } from '@/lib/auto-layout';
@@ -103,6 +104,24 @@ export function CanvasToolbar() {
       requestAnimationFrame(() => fitView({ padding: 0.15, duration: 300 }));
     } catch {
       // User cancelled or invalid file — silently ignore
+    }
+  };
+
+  const [importError, setImportError] = useState<string | null>(null);
+
+  const handleImportDockerCompose = async () => {
+    try {
+      setImportError(null);
+      const { nodes: importedNodes, edges: importedEdges } = await importDockerCompose();
+      pushHistory();
+      setNodes(importedNodes);
+      setEdges(importedEdges);
+      requestAnimationFrame(() => fitView({ padding: 0.15, duration: 300 }));
+    } catch (err) {
+      if (err instanceof Error && err.message !== 'No file selected') {
+        setImportError(err.message);
+        setTimeout(() => setImportError(null), 4000);
+      }
     }
   };
 
@@ -364,14 +383,30 @@ export function CanvasToolbar() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleImportJson} aria-label="Import JSON">
-              <Upload className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Import JSON</TooltipContent>
-        </Tooltip>
+        <DropdownMenu>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" aria-label="Import">
+                  <Upload className="h-4 w-4 md:mr-1" />
+                  <span className="hidden md:inline">Import</span>
+                </Button>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent className="md:hidden">Import</TooltipContent>
+          </Tooltip>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={handleImportJson}>
+              <FileJson className="h-4 w-4 mr-2" />
+              JSON
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleImportDockerCompose}>
+              <Container className="h-4 w-4 mr-2" />
+              Docker Compose
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <Tooltip>
           <TooltipTrigger asChild>
@@ -390,6 +425,11 @@ export function CanvasToolbar() {
           <TooltipContent>Present (P)</TooltipContent>
         </Tooltip>
       </div>
+      {importError && (
+        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-1.5 text-xs text-destructive shadow-sm whitespace-nowrap">
+          {importError}
+        </div>
+      )}
     </TooltipProvider>
   );
 }

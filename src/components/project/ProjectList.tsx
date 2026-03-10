@@ -7,8 +7,16 @@ import { ProjectCard } from './ProjectCard';
 import { ProjectModal } from './ProjectModal';
 import { TemplateSelector } from './TemplateSelector';
 import { Button } from '@/components/ui/button';
-import { Plus, Upload, Server, Database, Layers, ArrowRight, Search } from 'lucide-react';
+import { Plus, Upload, Server, Database, Layers, ArrowRight, Search, FileJson, Container } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { parseDockerCompose } from '@/lib/docker-compose';
 import type { Project } from '@/types';
 
 export function ProjectList() {
@@ -75,6 +83,36 @@ export function ProjectList() {
     input.click();
   };
 
+  const handleImportDockerCompose = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.yml,.yaml';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const content = event.target?.result as string;
+          const { nodes, edges } = parseDockerCompose(content);
+          const name = file.name.replace(/\.(ya?ml)$/i, '');
+          const project = createProject(name, `Imported from ${file.name}`);
+          // Update the project with parsed nodes/edges
+          const store = useProjectStore.getState();
+          const fullProject = store.projects.find((p) => p.id === project.id);
+          if (fullProject) {
+            store.saveProject({ ...fullProject, nodes, edges });
+          }
+          router.push(`/canvas/${project.id}`);
+        } catch (err) {
+          alert(`Failed to parse Docker Compose: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  };
+
   const handleRename = (name: string) => {
     if (renameTarget) {
       renameProject(renameTarget.id, name);
@@ -99,10 +137,25 @@ export function ProjectList() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleImport}>
-            <Upload className="h-4 w-4 mr-2" />
-            Import
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Upload className="h-4 w-4 mr-2" />
+                Import
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={handleImport}>
+                <FileJson className="h-4 w-4 mr-2" />
+                JSON Project
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleImportDockerCompose}>
+                <Container className="h-4 w-4 mr-2" />
+                Docker Compose
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button onClick={() => setCreateOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             New Project
