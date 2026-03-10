@@ -25,6 +25,7 @@ interface CanvasStore {
   edges: SystemEdge[];
   viewport: Viewport;
   selectedNodeId: string | null;
+  selectedEdgeId: string | null;
   projectId: string | null;
 
   // Pending edge type selection
@@ -66,6 +67,7 @@ interface CanvasStore {
   deleteEdge: (edgeId: string) => void;
   setViewport: (viewport: Viewport) => void;
   setSelectedNodeId: (id: string | null) => void;
+  setSelectedEdgeId: (id: string | null) => void;
   copySelection: () => void;
   pasteSelection: () => void;
   deleteSelection: () => void;
@@ -82,6 +84,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   edges: [],
   viewport: { x: 0, y: 0, zoom: 1 },
   selectedNodeId: null,
+  selectedEdgeId: null,
   projectId: null,
   history: [],
   historyIndex: -1,
@@ -108,6 +111,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       edges,
       viewport,
       selectedNodeId: null,
+      selectedEdgeId: null,
       history: [{ nodes, edges }],
       historyIndex: 0,
     });
@@ -187,7 +191,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
   setEdges: (edges) => set({ edges }),
 
-  setSelectedNodeId: (id) => set({ selectedNodeId: id }),
+  setSelectedNodeId: (id) => set({ selectedNodeId: id, selectedEdgeId: null }),
+  setSelectedEdgeId: (id) => set({ selectedEdgeId: id, selectedNodeId: null }),
 
   copySelection: () => {
     const { nodes, edges } = get();

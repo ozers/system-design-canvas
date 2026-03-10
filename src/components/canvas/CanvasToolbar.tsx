@@ -17,7 +17,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, ZoomIn, ZoomOut, Maximize, Undo2, Redo2, Download, Upload, ImageIcon, FileCode, FileJson, FileText, Grid3x3, StickyNote, LayoutDashboard, Circle, Columns3, Hash, EyeOff, Share2, Check, Presentation, Loader2, CheckCircle2 } from 'lucide-react';
+import { Plus, ZoomIn, ZoomOut, Maximize, Undo2, Redo2, Download, Upload, ImageIcon, FileCode, FileJson, FileText, Grid3x3, StickyNote, LayoutDashboard, Circle, Columns3, Hash, EyeOff, Share2, Check, Presentation, Loader2, CheckCircle2, Search } from 'lucide-react';
 import { exportToPng, exportToSvg, exportToJson, importFromJson } from '@/lib/export';
 import { encodeCanvasToUrl } from '@/lib/share';
 import { exportToMermaid } from '@/lib/mermaid';
@@ -165,6 +165,21 @@ export function CanvasToolbar() {
             </Button>
           </TooltipTrigger>
           <TooltipContent className="md:hidden">Note</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
+              aria-label="Search"
+            >
+              <Search className="h-4 w-4 md:mr-1" />
+              <span className="hidden md:inline">Search</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent className="md:hidden">Search (⌘K)</TooltipContent>
         </Tooltip>
 
         <div className="mx-1 h-6 w-px bg-border" />

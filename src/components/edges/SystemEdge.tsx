@@ -10,6 +10,7 @@ import {
 import { EDGE_REGISTRY } from './edge-registry';
 import { EdgeTypeSelector } from './EdgeTypeSelector';
 import { useCanvasStore } from '@/stores/useCanvasStore';
+import { Clock, FileJson, Activity } from 'lucide-react';
 import type { SystemEdgeData } from '@/types';
 
 type SystemEdgeProps = EdgeProps & { data?: SystemEdgeData };
@@ -43,6 +44,8 @@ function SystemEdgeComponent({
   });
 
   const label = data?.label || config.label;
+  const setSelectedEdgeId = useCanvasStore((s) => s.setSelectedEdgeId);
+  const hasMeta = data?.latency || data?.dataFormat || data?.throughput;
 
   const startEditing = useCallback(() => {
     setEditValue(data?.label ?? '');
@@ -80,33 +83,63 @@ function SystemEdgeComponent({
             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
             pointerEvents: 'all',
           }}
-          className="flex items-center gap-1 rounded bg-popover text-popover-foreground px-2 py-0.5 text-[11px] font-medium shadow-sm border border-border"
-          onDoubleClick={(e) => {
-            e.stopPropagation();
-            startEditing();
-          }}
+          className="flex flex-col items-center gap-0.5"
         >
-          {editing ? (
-            <input
-              ref={inputRef}
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              onBlur={commitEdit}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') commitEdit();
-                if (e.key === 'Escape') setEditing(false);
-              }}
-              className="w-20 bg-transparent outline-none text-[11px]"
-            />
-          ) : (
-            label
-          )}
-          {selected && !editing && (
-            <EdgeTypeSelector
-              edgeId={id}
-              currentType={edgeType}
-              currentLabel={data?.label}
-            />
+          <div
+            className="flex items-center gap-1 rounded bg-popover text-popover-foreground px-2 py-0.5 text-[11px] font-medium shadow-sm border border-border cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedEdgeId(id);
+            }}
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              startEditing();
+            }}
+          >
+            {editing ? (
+              <input
+                ref={inputRef}
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onBlur={commitEdit}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') commitEdit();
+                  if (e.key === 'Escape') setEditing(false);
+                }}
+                className="w-20 bg-transparent outline-none text-[11px]"
+              />
+            ) : (
+              label
+            )}
+            {selected && !editing && (
+              <EdgeTypeSelector
+                edgeId={id}
+                currentType={edgeType}
+                currentLabel={data?.label}
+              />
+            )}
+          </div>
+          {hasMeta && (
+            <div className="flex items-center gap-1 flex-wrap justify-center">
+              {data?.latency && (
+                <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 px-1.5 py-0 text-[9px] font-medium">
+                  <Clock className="h-2.5 w-2.5" />
+                  {data.latency}
+                </span>
+              )}
+              {data?.dataFormat && (
+                <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 px-1.5 py-0 text-[9px] font-medium">
+                  <FileJson className="h-2.5 w-2.5" />
+                  {data.dataFormat}
+                </span>
+              )}
+              {data?.throughput && (
+                <span className="inline-flex items-center gap-0.5 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 px-1.5 py-0 text-[9px] font-medium">
+                  <Activity className="h-2.5 w-2.5" />
+                  {data.throughput}
+                </span>
+              )}
+            </div>
           )}
         </div>
       </EdgeLabelRenderer>

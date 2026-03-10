@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useCanvasStore } from '@/stores/useCanvasStore';
 import { NODE_REGISTRY, getNodesByCategory } from './node-registry';
-import type { SystemNodeType } from '@/types';
+import type { SystemNodeType, NodeStatus, NodeEnvironment } from '@/types';
+import { NODE_STATUSES, NODE_ENVIRONMENTS } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
-import { X, Plus, Trash2 } from 'lucide-react';
+import { X, Plus, Trash2, Circle, User, ExternalLink } from 'lucide-react';
 
 function NodeEditorContent() {
   const selectedNodeId = useCanvasStore((s) => s.selectedNodeId);
@@ -18,6 +19,8 @@ function NodeEditorContent() {
   const setSelectedNodeId = useCanvasStore((s) => s.setSelectedNodeId);
 
   const [techInput, setTechInput] = useState('');
+  const [linkLabel, setLinkLabel] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
 
   const node = nodes.find((n) => n.id === selectedNodeId);
 
@@ -150,6 +153,155 @@ function NodeEditorContent() {
             />
             <Button variant="outline" size="icon" className="shrink-0" onClick={addTech} aria-label="Add technology">
               <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <Label className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider">Operational Info</Label>
+
+          <div className="space-y-2">
+            <Label className="text-xs">Status</Label>
+            <div className="grid grid-cols-2 gap-1">
+              {[undefined, ...NODE_STATUSES].map((status) => {
+                const isNone = status === undefined;
+                const isCurrent = node.data.status === status;
+                const statusColors: Record<string, string> = {
+                  operational: 'bg-green-500',
+                  degraded: 'bg-amber-500',
+                  down: 'bg-red-500',
+                  maintenance: 'bg-blue-500',
+                };
+                const statusLabels: Record<string, string> = {
+                  operational: 'Operational',
+                  degraded: 'Degraded',
+                  down: 'Down',
+                  maintenance: 'Maintenance',
+                };
+                return (
+                  <button
+                    key={status ?? 'none'}
+                    onClick={() => updateNodeData(selectedNodeId, { status: status as NodeStatus | undefined })}
+                    className={`flex items-center gap-1.5 rounded px-2 py-1 text-xs transition-colors ${
+                      isCurrent ? 'bg-muted font-medium ring-1 ring-border' : 'hover:bg-accent'
+                    }`}
+                  >
+                    {isNone ? (
+                      <Circle className="h-2 w-2 text-muted-foreground" />
+                    ) : (
+                      <span className={`h-2 w-2 rounded-full ${statusColors[status]}`} />
+                    )}
+                    {isNone ? 'None' : statusLabels[status]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs">Environment</Label>
+            <div className="grid grid-cols-3 gap-1">
+              {[undefined, ...NODE_ENVIRONMENTS].map((env) => {
+                const isNone = env === undefined;
+                const isCurrent = node.data.environment === env;
+                const envLabels: Record<string, string> = {
+                  production: 'Prod',
+                  staging: 'Staging',
+                  development: 'Dev',
+                };
+                return (
+                  <button
+                    key={env ?? 'none'}
+                    onClick={() => updateNodeData(selectedNodeId, { environment: env as NodeEnvironment | undefined })}
+                    className={`rounded px-2 py-1 text-xs transition-colors ${
+                      isCurrent ? 'bg-muted font-medium ring-1 ring-border' : 'hover:bg-accent'
+                    }`}
+                  >
+                    {isNone ? 'None' : envLabels[env]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5">
+              <User className="h-3.5 w-3.5 text-muted-foreground" />
+              <Label className="text-xs">Owner / Team</Label>
+            </div>
+            <Input
+              value={node.data.owner ?? ''}
+              onChange={(e) => updateNodeData(selectedNodeId, { owner: e.target.value })}
+              placeholder="e.g. Platform Team, @alice"
+              className="text-sm"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider">Links</Label>
+          <div className="space-y-1">
+            {(node.data.links ?? []).map((link, i) => (
+              <div key={i} className="flex items-center gap-1 group">
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs text-primary hover:underline truncate flex-1"
+                >
+                  <ExternalLink className="h-3 w-3 shrink-0" />
+                  {link.label || link.url}
+                </a>
+                <button
+                  onClick={() => {
+                    const links = [...(node.data.links ?? [])];
+                    links.splice(i, 1);
+                    updateNodeData(selectedNodeId, { links });
+                  }}
+                  className="opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-1">
+            <Input
+              value={linkLabel}
+              onChange={(e) => setLinkLabel(e.target.value)}
+              placeholder="Label"
+              className="text-xs h-7 w-20 shrink-0"
+            />
+            <Input
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && linkUrl.trim()) {
+                  updateNodeData(selectedNodeId, {
+                    links: [...(node.data.links ?? []), { label: linkLabel.trim() || 'Link', url: linkUrl.trim() }],
+                  });
+                  setLinkLabel('');
+                  setLinkUrl('');
+                }
+              }}
+              placeholder="https://..."
+              className="text-xs h-7"
+            />
+            <Button
+              variant="outline"
+              size="icon"
+              className="shrink-0 h-7 w-7"
+              disabled={!linkUrl.trim()}
+              onClick={() => {
+                updateNodeData(selectedNodeId, {
+                  links: [...(node.data.links ?? []), { label: linkLabel.trim() || 'Link', url: linkUrl.trim() }],
+                });
+                setLinkLabel('');
+                setLinkUrl('');
+              }}
+              aria-label="Add link"
+            >
+              <Plus className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>

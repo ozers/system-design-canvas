@@ -42,12 +42,26 @@ export const SYSTEM_EDGE_TYPES = [
 
 export type SystemEdgeType = (typeof SYSTEM_EDGE_TYPES)[number];
 
+// Node status & environment
+export const NODE_STATUSES = ['operational', 'degraded', 'down', 'maintenance'] as const;
+export type NodeStatus = (typeof NODE_STATUSES)[number];
+
+export const NODE_ENVIRONMENTS = ['production', 'staging', 'development'] as const;
+export type NodeEnvironment = (typeof NODE_ENVIRONMENTS)[number];
+
 // Node data
 export const SystemNodeDataSchema = z.object({
   label: z.string(),
   nodeType: z.enum(SYSTEM_NODE_TYPES),
   description: z.string().optional(),
   techStack: z.array(z.string()).default([]),
+  status: z.enum(NODE_STATUSES).optional(),
+  environment: z.enum(NODE_ENVIRONMENTS).optional(),
+  owner: z.string().optional(),
+  links: z.array(z.object({
+    label: z.string(),
+    url: z.string(),
+  })).optional(),
 });
 
 export type SystemNodeData = z.infer<typeof SystemNodeDataSchema>;
@@ -56,6 +70,10 @@ export type SystemNodeData = z.infer<typeof SystemNodeDataSchema>;
 export const SystemEdgeDataSchema = z.object({
   edgeType: z.enum(SYSTEM_EDGE_TYPES),
   label: z.string().optional(),
+  description: z.string().optional(),
+  latency: z.string().optional(),
+  dataFormat: z.string().optional(),
+  throughput: z.string().optional(),
 });
 
 export type SystemEdgeData = z.infer<typeof SystemEdgeDataSchema>;

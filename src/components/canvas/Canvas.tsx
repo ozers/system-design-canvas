@@ -29,11 +29,14 @@ import { ConnectionTypePicker } from '@/components/edges/ConnectionTypePicker';
 import { CanvasToolbar } from './CanvasToolbar';
 import { NodePalette } from './NodePalette';
 import { NodeEditor } from '@/components/nodes/NodeEditor';
+import { EdgeEditor } from '@/components/edges/EdgeEditor';
 import { Header } from '@/components/layout/Header';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useTheme } from '@/hooks/useTheme';
 import { OnboardingOverlay } from './OnboardingOverlay';
+import { SearchDialog } from './SearchDialog';
+import { ValidationPanel } from './ValidationPanel';
 import { CanvasContextMenu, type ContextMenuState } from './CanvasContextMenu';
 import { NODE_REGISTRY } from '@/components/nodes/node-registry';
 import type { SystemNode, SystemEdge as SystemEdgeType, SystemNodeType, SystemNodeData } from '@/types';
@@ -146,6 +149,8 @@ function CanvasInner({ projectId }: { projectId: string }) {
     }
   }, [projectId, loaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const setSelectedEdgeId = useCanvasStore((s) => s.setSelectedEdgeId);
+
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: SystemNode) => {
       setSelectedNodeId(node.id);
@@ -153,10 +158,18 @@ function CanvasInner({ projectId }: { projectId: string }) {
     [setSelectedNodeId]
   );
 
+  const onEdgeClick = useCallback(
+    (_: React.MouseEvent, edge: SystemEdgeType) => {
+      setSelectedEdgeId(edge.id);
+    },
+    [setSelectedEdgeId]
+  );
+
   const onPaneClick = useCallback(() => {
     setSelectedNodeId(null);
+    setSelectedEdgeId(null);
     setContextMenu(null);
-  }, [setSelectedNodeId]);
+  }, [setSelectedNodeId, setSelectedEdgeId]);
 
   const onNodesDelete = useCallback(
     (deleted: SystemNode[]) => {
@@ -294,9 +307,12 @@ function CanvasInner({ projectId }: { projectId: string }) {
 
   const currentProject = projects.find((p) => p.id === projectId);
   const selectedNodeId = useCanvasStore((s) => s.selectedNodeId);
+  const selectedEdgeId = useCanvasStore((s) => s.selectedEdgeId);
   const selectedNode = nodes.find((n) => n.id === selectedNodeId);
+  const selectedEdge = edges.find((e) => e.id === selectedEdgeId);
   const selectedCount = nodes.filter((n) => n.selected).length;
-  const isEditorOpen = !!selectedNode && selectedCount <= 1;
+  const isNodeEditorOpen = !!selectedNode && selectedCount <= 1;
+  const isEdgeEditorOpen = !!selectedEdge;
 
   return (
     <div className="flex h-screen w-screen flex-col">
@@ -314,6 +330,7 @@ function CanvasInner({ projectId }: { projectId: string }) {
             onReconnectStart={onReconnectStart}
             onReconnectEnd={onReconnectEnd}
             onNodeClick={onNodeClick}
+            onEdgeClick={onEdgeClick}
             onPaneClick={onPaneClick}
             onNodesDelete={onNodesDelete}
             onEdgesDelete={onEdgesDelete}
@@ -361,6 +378,8 @@ function CanvasInner({ projectId }: { projectId: string }) {
           {!presentationMode && <NodePalette />}
           {!presentationMode && <ConnectionTypePicker />}
           {!presentationMode && <OnboardingOverlay />}
+          {!presentationMode && <SearchDialog />}
+          {!presentationMode && <ValidationPanel />}
           {presentationMode && (
             <button
               onClick={togglePresentationMode}
@@ -380,7 +399,8 @@ function CanvasInner({ projectId }: { projectId: string }) {
             />
           )}
         </div>
-        {isEditorOpen && !presentationMode && <NodeEditor />}
+        {isNodeEditorOpen && !presentationMode && <NodeEditor />}
+        {isEdgeEditorOpen && !presentationMode && <EdgeEditor />}
       </div>
     </div>
   );
