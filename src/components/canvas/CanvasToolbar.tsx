@@ -47,7 +47,7 @@ import { getShortcutKeys } from '@/lib/shortcuts';
 import { cn } from '@/lib/utils';
 import type { SystemEdge, SystemNode } from '@/types';
 import { AddComponentSubmenus } from './AddComponentMenu';
-import { shortcutLabel, useAddNodeAtCenter } from './canvas-helpers';
+import { getFitViewOptions, shortcutLabel, useAddNodeAtCenter } from './canvas-helpers';
 
 const COARSE_HIT = '[@media(pointer:coarse)]:size-11';
 
@@ -90,7 +90,7 @@ function ToolbarIconButton({
 function useToolbarActions() {
   const { fitView } = useReactFlow();
 
-  const refit = () => requestAnimationFrame(() => fitView({ padding: 0.15, duration: 300 }));
+  const refit = () => requestAnimationFrame(() => fitView(getFitViewOptions(300)));
 
   const autoLayout = () => {
     const { nodes, edges, pushHistory, setNodes } = useCanvasStore.getState();
@@ -268,7 +268,7 @@ export function CanvasToolbar() {
   const [clearOpen, setClearOpen] = useState(false);
 
   const zoomPct = `${Math.round(zoom * 100)}%`;
-  const fit = () => fitView({ padding: 0.15, duration: 200 });
+  const fit = () => fitView(getFitViewOptions(200));
 
   const moreProps = {
     narrow,

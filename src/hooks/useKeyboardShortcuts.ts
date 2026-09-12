@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { useCanvasStore } from '@/stores/useCanvasStore';
 
+import { getFitViewOptions } from '@/components/canvas/canvas-helpers';
 function isTyping(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false;
   return target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable;
@@ -118,7 +119,7 @@ export function useKeyboardShortcuts() {
       if (e.shiftKey) return;
       if (key === 'f') {
         e.preventDefault();
-        fitView({ padding: 0.15, duration: 200 });
+        fitView(getFitViewOptions(200));
         return;
       }
       if (key === 'p') {

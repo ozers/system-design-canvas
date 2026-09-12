@@ -1,12 +1,33 @@
 'use client';
 
 import { useCallback, useRef } from 'react';
-import { useReactFlow, useStoreApi } from '@xyflow/react';
+import { useReactFlow, useStoreApi, type FitViewOptions } from '@xyflow/react';
 import { useCanvasStore } from '@/stores/useCanvasStore';
 import { createNoteNode, createSystemNode } from '@/lib/node-factory';
 import { formatKey } from '@/components/ui/kbd';
 import { getShortcutKeys, type ShortcutId } from '@/lib/shortcuts';
 import type { SystemEdge, SystemNode, SystemNodeType } from '@/types';
+
+/**
+ * fitView options that keep the diagram clear of the floating chrome:
+ * library (left), validation panel (top), toolbar (bottom), open editor (right).
+ */
+export function getFitViewOptions(duration?: number): FitViewOptions {
+  if (typeof window === 'undefined') return { padding: 0.15, duration };
+  if (window.matchMedia('(max-width: 899px)').matches) {
+    return { padding: { top: '72px', right: '24px', bottom: '24px', left: '24px' }, duration };
+  }
+  const { libraryCollapsed, selectedNodeId, selectedEdgeId } = useCanvasStore.getState();
+  return {
+    padding: {
+      top: '76px',
+      right: selectedNodeId || selectedEdgeId ? '340px' : '48px',
+      bottom: '96px',
+      left: libraryCollapsed ? '96px' : '308px',
+    },
+    duration,
+  };
+}
 
 /** "⌘D" on Apple, "Ctrl+D" elsewhere — for menu shortcut hints. */
 export function formatShortcut(keys: string[]) {

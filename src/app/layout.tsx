@@ -51,8 +51,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: `${siteUrl}/screenshots/canvas-light.png`,
-        width: 1200,
-        height: 630,
+        width: 2880,
+        height: 1800,
         alt: "System Design Canvas — Serverless Fullstack architecture diagram",
       },
     ],

@@ -103,7 +103,7 @@ function EdgeEditorContent({ edgeId, onClose }: { edgeId: string; onClose: () =>
             {DETAILS.map(({ key, label, icon: Icon, placeholder }, i) => (
               <label
                 key={key}
-                className={cn('grid h-9 grid-cols-[96px_1fr] items-center', i > 0 && 'border-t border-line-2')}
+                className={cn('grid h-9 grid-cols-[112px_1fr] items-center', i > 0 && 'border-t border-line-2')}
               >
                 <span className="inline-flex items-center gap-[7px] pl-2.5 text-[12px] text-ink-2">
                   <Icon className="size-[13px] text-ink-3" />

@@ -51,7 +51,7 @@ import { ShortcutsDialog } from './ShortcutsDialog';
 import { OnboardingOverlay } from './OnboardingOverlay';
 import { ShareDialog } from './ShareDialog';
 import { ExportDialog } from './ExportDialog';
-import { presentationOrder } from './canvas-helpers';
+import { getFitViewOptions, presentationOrder } from './canvas-helpers';
 
 const nodeTypes = { system: BaseSystemNode, group: GroupNode, note: StickyNote };
 const edgeTypes = { system: SystemEdge };
@@ -120,7 +120,7 @@ function CanvasInner({ projectId }: { projectId: string }) {
     if (!project) return;
     initCanvas(projectId, project.nodes as SystemNode[], project.edges as SystemEdgeModel[], project.viewport);
     requestAnimationFrame(() => {
-      fitView({ padding: 0.15, duration: 200 });
+      fitView(getFitViewOptions(200));
     });
   }, [projectId, loaded, initCanvas, fitView]);
 
@@ -323,7 +323,7 @@ function CanvasInner({ projectId }: { projectId: string }) {
             defaultViewport={viewport}
             defaultEdgeOptions={{ type: 'system' }}
             fitView
-            fitViewOptions={{ padding: 0.15 }}
+            fitViewOptions={getFitViewOptions()}
             connectionMode={ConnectionMode.Loose}
             selectionMode={SelectionMode.Partial}
             snapToGrid={snap}

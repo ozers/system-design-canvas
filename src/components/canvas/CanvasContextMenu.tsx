@@ -32,7 +32,7 @@ import {
 import { createNoteNode, createSystemNode } from '@/lib/node-factory';
 import type { SystemNodeType } from '@/types';
 import { AddComponentSubmenus } from './AddComponentMenu';
-import { shortcutLabel } from './canvas-helpers';
+import { getFitViewOptions, shortcutLabel } from './canvas-helpers';
 
 export interface ContextMenuState {
   /** Client coordinates of the right-click. */
@@ -163,7 +163,7 @@ export function CanvasContextMenu({ menu, onClose }: { menu: ContextMenuState; o
         Select all
         <DropdownMenuShortcut>{shortcutLabel('select-all')}</DropdownMenuShortcut>
       </DropdownMenuItem>
-      <DropdownMenuItem onSelect={() => fitView({ padding: 0.15, duration: 200 })}>
+      <DropdownMenuItem onSelect={() => fitView(getFitViewOptions(200))}>
         <Maximize />
         Fit view
         <DropdownMenuShortcut>{shortcutLabel('fit-view')}</DropdownMenuShortcut>

@@ -31,6 +31,7 @@ import { getShortcutKeys } from '@/lib/shortcuts';
 import { cn } from '@/lib/utils';
 import type { SystemNodeData, SystemNodeType } from '@/types';
 
+import { getFitViewOptions } from './canvas-helpers';
 type GroupName = 'Add component' | 'Actions' | 'Jump to' | 'Go to';
 
 interface CommandItem {
@@ -191,7 +192,7 @@ function CommandMenuBody({ onClose }: { onClose: () => void }) {
           if (current.length === 0) return;
           pushHistory();
           setNodes(getLayoutedElements(current, edges).nodes);
-          requestAnimationFrame(() => fitView({ padding: 0.15, duration: 300 }));
+          requestAnimationFrame(() => fitView(getFitViewOptions(300)));
         },
       },
       {
