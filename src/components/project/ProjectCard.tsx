@@ -16,6 +16,7 @@ import { formatRelative, plural } from '@/lib/utils';
 import type { Project } from '@/types';
 import { countComponents } from './project-io';
 
+import { canvasPath } from '@/lib/routes';
 interface ProjectCardProps {
   project: Project;
   onRename: (project: Project) => void;
@@ -45,7 +46,7 @@ function ProjectCardComponent({ project, onRename, onDuplicate, onExport, onDele
         <div className="min-w-0 flex-1">
           {/* The title link stretches over the whole card; the menu button sits above it. */}
           <Link
-            href={`/canvas/${project.id}`}
+            href={canvasPath(project.id)}
             className="block truncate text-[14.5px] leading-5 font-semibold text-ink outline-none after:absolute after:inset-0 after:rounded-[14px] after:content-['']"
           >
             {project.name}

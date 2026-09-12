@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    {
+      "source": "/canvas/:id((?!shared$)[^/]+)",
+      "destination": "/canvas?id=:id",
+      "permanent": true
+    }
+  ]
+}
