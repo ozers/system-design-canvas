@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Providers } from "@/components/providers";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -70,11 +71,24 @@ export const metadata: Metadata = {
   },
 };
 
+// Resolve the theme before first paint so there is no flash.
+// Reads the persisted settings (sdc.settings), falling back to the legacy key.
 const themeScript = `
 (function() {
-  var t = localStorage.getItem('system-design-canvas-theme');
-  if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-    document.documentElement.classList.add('dark');
+  try {
+    var pref = 'system';
+    var raw = localStorage.getItem('sdc.settings');
+    if (raw) {
+      var s = JSON.parse(raw);
+      if (s && s.state && s.state.theme) pref = s.state.theme;
+    } else {
+      var legacy = localStorage.getItem('system-design-canvas-theme');
+      if (legacy === 'dark' || legacy === 'light') pref = legacy;
+    }
+    var dark = pref === 'dark' || (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  } catch (e) {
+    document.documentElement.setAttribute('data-theme', 'light');
   }
 })();
 `;
@@ -85,14 +99,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" data-theme="light" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

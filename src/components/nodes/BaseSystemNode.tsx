@@ -1,110 +1,123 @@
 'use client';
 
 import { memo } from 'react';
-import { Handle, Position, NodeResizer, type NodeProps } from '@xyflow/react';
+import { Handle, NodeResizer, Position, type NodeProps } from '@xyflow/react';
+import { Link2, Lock, TriangleAlert } from 'lucide-react';
 import { NODE_REGISTRY } from './node-registry';
-import type { SystemNodeData, NodeStatus, NodeEnvironment } from '@/types';
-import { cn } from '@/lib/utils';
+import { IconChip } from '@/components/ui/panel';
 import { useCanvasStore } from '@/stores/useCanvasStore';
-import { ExternalLink } from 'lucide-react';
+import { useHasValidationWarning } from '@/lib/validation';
+import { cn } from '@/lib/utils';
+import type { NodeEnvironment, NodeStatus, SystemNode } from '@/types';
 
-const STATUS_CONFIG: Record<NodeStatus, { color: string; label: string }> = {
-  operational: { color: 'bg-green-500', label: 'Operational' },
-  degraded: { color: 'bg-amber-500', label: 'Degraded' },
-  down: { color: 'bg-red-500', label: 'Down' },
-  maintenance: { color: 'bg-blue-500', label: 'Maintenance' },
+export const NODE_STATUS_META: Record<NodeStatus, { label: string; dot: string }> = {
+  operational: { label: 'Operational', dot: 'bg-ok' },
+  degraded: { label: 'Degraded', dot: 'bg-warn' },
+  down: { label: 'Down', dot: 'bg-danger' },
+  maintenance: { label: 'Maintenance', dot: 'bg-accent' },
 };
 
-const ENV_CONFIG: Record<NodeEnvironment, { className: string; label: string }> = {
-  production: { className: 'bg-red-500/10 text-red-600 dark:text-red-400', label: 'prod' },
-  staging: { className: 'bg-amber-500/10 text-amber-600 dark:text-amber-400', label: 'stg' },
-  development: { className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400', label: 'dev' },
+export const NODE_ENV_META: Record<NodeEnvironment, { short: string; label: string }> = {
+  production: { short: 'prod', label: 'Prod' },
+  staging: { short: 'stg', label: 'Staging' },
+  development: { short: 'dev', label: 'Dev' },
 };
 
-type BaseSystemNodeProps = NodeProps & { data: SystemNodeData };
+const NODE_WIDTH = 200;
+/** Duplicate handles sharing a spot with a visible one: invisible but connectable. */
+const HIDDEN = '!opacity-0';
 
-function BaseSystemNodeComponent({ id, data, selected }: BaseSystemNodeProps) {
-  const config = NODE_REGISTRY[data.nodeType];
+function BaseSystemNodeComponent({ id, data, selected, draggable, width, height }: NodeProps<SystemNode>) {
+  const config = NODE_REGISTRY[data.nodeType] ?? NODE_REGISTRY.service;
   const Icon = config.icon;
+  const presenting = useCanvasStore((s) => s.presentation.active);
   const setSelectedNodeId = useCanvasStore((s) => s.setSelectedNodeId);
+  const hasWarning = useHasValidationWarning(id);
+
+  const techStack = data.techStack ?? [];
+  const subtitle = techStack.length > 0 ? techStack.join(' · ') : config.label;
+  const linkCount = data.links?.length ?? 0;
+  const locked = draggable === false && !presenting;
 
   return (
     <div
       className={cn(
-        'min-w-[160px] min-h-[80px] rounded-lg border-2 px-4 py-3 shadow-sm transition-shadow',
-        config.bgColor,
-        config.borderColor,
-        config.darkBgColor,
-        config.darkBorderColor,
-        selected && 'shadow-md ring-2 ring-ring'
+        'relative min-w-[200px] rounded-[12px] border bg-paper p-3.5 text-ink transition-[border-color,box-shadow] duration-[120ms] ease-out',
+        selected
+          ? 'border-accent shadow-[0_0_0_3px_var(--accent-soft),var(--shadow)]'
+          : 'border-line shadow-[var(--shadow)] hover:border-ink-3 hover:shadow-[var(--shadow-lg)]'
       )}
+      // Fixed 200px until resized; after resizing, fill the React Flow wrapper.
+      style={{ width: width ? '100%' : NODE_WIDTH, height: height ? '100%' : undefined }}
       onDoubleClick={() => setSelectedNodeId(id)}
     >
-      <NodeResizer
-        isVisible={!!selected}
-        minWidth={160}
-        minHeight={80}
-        lineClassName="!border-primary"
-        handleClassName="!w-2 !h-2 !bg-primary !border-primary"
-      />
-      <Handle type="target" id="top-target" position={Position.Top} className="!bg-muted-foreground !w-3 !h-3" />
-      <Handle type="source" id="top-source" position={Position.Top} className="!bg-muted-foreground !w-3 !h-3 !opacity-0" />
-      <Handle type="target" id="left-target" position={Position.Left} className="!bg-muted-foreground !w-3 !h-3" />
-      <Handle type="source" id="left-source" position={Position.Left} className="!bg-muted-foreground !w-3 !h-3 !opacity-0" />
+      <NodeResizer isVisible={!!selected && !presenting} minWidth={NODE_WIDTH} minHeight={60} />
 
-      <div className="flex items-center gap-2">
-        <div className="relative">
-          <Icon className={cn('h-5 w-5', config.color)} />
+      <Handle type="target" id="top-target" position={Position.Top} />
+      <Handle type="source" id="top-source" position={Position.Top} className={HIDDEN} />
+      <Handle type="target" id="left-target" position={Position.Left} />
+      <Handle type="source" id="left-source" position={Position.Left} className={HIDDEN} />
+
+      {hasWarning && !presenting && (
+        <span
+          role="img"
+          aria-label="Has a validation warning"
+          className="pointer-events-none absolute -top-1.5 -right-1.5 z-10 inline-flex size-[18px] items-center justify-center rounded-full border-2 border-paper bg-warn"
+          style={{ color: 'oklch(0.2 0.02 75)' }}
+        >
+          <TriangleAlert size={10} strokeWidth={2.5} />
+        </span>
+      )}
+
+      <div className="flex items-center gap-2.5">
+        <span className="relative shrink-0">
+          <IconChip color={config.color} size={32}>
+            <Icon className="size-4" />
+          </IconChip>
           {data.status && (
             <span
-              className={cn('absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full ring-1 ring-background', STATUS_CONFIG[data.status].color)}
-              title={STATUS_CONFIG[data.status].label}
+              title={NODE_STATUS_META[data.status].label}
+              className={cn(
+                'absolute -top-[3px] -right-[3px] size-2.5 rounded-full border-2 border-paper',
+                NODE_STATUS_META[data.status].dot
+              )}
             />
           )}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1">
+            <span className="truncate text-[13.5px] leading-[18px] font-semibold">{data.label || 'Untitled'}</span>
+            {locked && <Lock aria-label="Locked" className="size-3 shrink-0 text-ink-3" />}
+            {data.environment && (
+              <span className="ml-auto shrink-0 rounded-full bg-line-2 px-1.5 font-mono text-[10px] leading-4 text-ink-2">
+                {NODE_ENV_META[data.environment].short}
+              </span>
+            )}
+          </div>
+          <div className="truncate text-[11.5px] leading-[14px] text-ink-3">{subtitle}</div>
         </div>
-        <span className="font-medium text-sm text-foreground">{data.label}</span>
-        {data.environment && (
-          <span className={cn('rounded px-1 py-0 text-[9px] font-semibold uppercase', ENV_CONFIG[data.environment].className)}>
-            {ENV_CONFIG[data.environment].label}
-          </span>
-        )}
       </div>
 
-      {data.techStack.length > 0 && (
-        <div className="mt-1 flex flex-wrap gap-1">
-          {data.techStack.map((tech) => (
-            <span
-              key={tech}
-              className="rounded bg-background/60 dark:bg-background/40 px-1.5 py-0.5 text-[10px] text-muted-foreground dark:text-foreground/70"
-            >
-              {tech}
-            </span>
-          ))}
-        </div>
-      )}
-
       {data.description && (
-        <p className="mt-1 text-[11px] text-muted-foreground line-clamp-2">{data.description}</p>
+        <p className="mt-2 line-clamp-2 text-[12px] leading-4 text-ink-2">{data.description}</p>
       )}
 
-      {(data.owner || (data.links && data.links.length > 0)) && (
-        <div className="mt-1 flex items-center gap-2">
-          {data.owner && (
-            <span className="text-[10px] text-muted-foreground/70">{data.owner}</span>
-          )}
-          {data.links && data.links.length > 0 && (
-            <span className="inline-flex items-center gap-0.5 text-[10px] text-primary/70">
-              <ExternalLink className="h-2.5 w-2.5" />
-              {data.links.length}
+      {(data.owner || linkCount > 0) && (
+        <div className="mt-2 flex items-center gap-2 text-[11px] leading-[14px] text-ink-3">
+          {data.owner && <span className="min-w-0 truncate">{data.owner}</span>}
+          {linkCount > 0 && (
+            <span className="ml-auto inline-flex shrink-0 items-center gap-0.5 font-mono">
+              <Link2 className="size-3" />
+              {linkCount}
             </span>
           )}
         </div>
       )}
 
-      <Handle type="source" id="bottom-source" position={Position.Bottom} className="!bg-muted-foreground !w-3 !h-3" />
-      <Handle type="target" id="bottom-target" position={Position.Bottom} className="!bg-muted-foreground !w-3 !h-3 !opacity-0" />
-      <Handle type="source" id="right-source" position={Position.Right} className="!bg-muted-foreground !w-3 !h-3" />
-      <Handle type="target" id="right-target" position={Position.Right} className="!bg-muted-foreground !w-3 !h-3 !opacity-0" />
+      <Handle type="source" id="bottom-source" position={Position.Bottom} />
+      <Handle type="target" id="bottom-target" position={Position.Bottom} className={HIDDEN} />
+      <Handle type="source" id="right-source" position={Position.Right} />
+      <Handle type="target" id="right-target" position={Position.Right} className={HIDDEN} />
     </div>
   );
 }

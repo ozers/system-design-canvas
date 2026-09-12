@@ -1,52 +1,46 @@
 'use client';
 
-import { memo, useCallback } from 'react';
-import { type NodeProps, NodeResizer } from '@xyflow/react';
-import { BoxSelect } from 'lucide-react';
+import { memo } from 'react';
+import { NodeResizer, type NodeProps } from '@xyflow/react';
 import { useCanvasStore } from '@/stores/useCanvasStore';
+import { cn } from '@/lib/utils';
+import type { SystemNode } from '@/types';
 
-interface GroupNodeData {
-  label: string;
-  nodeType: 'group';
-  description?: string;
-  techStack: string[];
-}
-
-type GroupNodeProps = NodeProps & { data: GroupNodeData };
-
-function GroupNodeComponent({ id, data, selected }: GroupNodeProps) {
+function GroupNodeComponent({ id, data, selected }: NodeProps<SystemNode>) {
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
-
-  const handleLabelChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      updateNodeData(id, { label: e.target.value });
-    },
-    [id, updateNodeData]
-  );
+  const presenting = useCanvasStore((s) => s.presentation.active);
+  const label = data.label ?? '';
 
   return (
     <div
-      style={{ width: '100%', height: '100%' }}
-      className={`relative rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50/30 dark:bg-slate-900/20 transition-shadow ${
-        selected ? 'shadow-md ring-2 ring-ring' : ''
-      }`}
+      className={cn(
+        'relative size-full rounded-[16px] border border-dashed transition-[border-color,box-shadow] duration-[120ms] ease-out',
+        selected ? 'border-accent shadow-[0_0_0_3px_var(--accent-soft)]' : 'border-ink-3'
+      )}
+      style={{ background: 'color-mix(in oklch, var(--paper) 35%, transparent)' }}
     >
-      <NodeResizer
-        isVisible={!!selected}
-        minWidth={200}
-        minHeight={120}
-        lineClassName="!border-slate-400 dark:!border-slate-500"
-        handleClassName="!w-2 !h-2 !bg-slate-400 !border-slate-400 dark:!bg-slate-500 dark:!border-slate-500"
-      />
-      <div className="flex items-center gap-1.5 px-3 py-2">
-        <BoxSelect className="h-3.5 w-3.5 shrink-0 text-slate-500 dark:text-slate-400" />
+      <NodeResizer isVisible={!!selected && !presenting} minWidth={200} minHeight={120} />
+
+      {/* Auto-width label pill: an invisible copy of the text sizes the grid cell. */}
+      <span className="absolute -top-[11px] left-3 inline-grid max-w-[calc(100%-24px)] rounded-full border border-line bg-paper px-[9px] py-0.5 text-[11.5px] leading-4 font-medium text-ink-2 transition-[border-color,box-shadow] duration-[120ms] focus-within:border-accent focus-within:shadow-[0_0_0_3px_var(--accent-soft)]">
+        <span aria-hidden className="invisible col-start-1 row-start-1 overflow-hidden whitespace-pre">
+          {label || 'Group name'}
+        </span>
         <input
-          className="bg-transparent text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider outline-none placeholder-slate-400 dark:placeholder-slate-500"
-          value={data.label}
-          onChange={handleLabelChange}
-          placeholder="Group name..."
+          aria-label="Group name"
+          size={1}
+          readOnly={presenting}
+          className="col-start-1 row-start-1 w-full min-w-0 bg-transparent outline-none placeholder:text-ink-3"
+          value={label}
+          placeholder="Group name"
+          onChange={(e) => updateNodeData(id, { label: e.target.value })}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') e.currentTarget.blur();
+            // Let Esc through to the canvas; keep ⌫ etc. from deleting the group.
+            if (e.key !== 'Escape') e.stopPropagation();
+          }}
         />
-      </div>
+      </span>
     </div>
   );
 }

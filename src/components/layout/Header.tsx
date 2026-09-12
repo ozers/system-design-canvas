@@ -1,48 +1,96 @@
 'use client';
 
 import Link from 'next/link';
-import { Boxes, ArrowLeft, Moon, Sun } from 'lucide-react';
+import { Boxes, Container, FileJson, Github, Moon, Settings2, Sun, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import { useTheme } from '@/hooks/useTheme';
-import { KeyboardShortcuts } from '@/components/canvas/KeyboardShortcuts';
+import { cn } from '@/lib/utils';
 
 interface HeaderProps {
-  projectName?: string;
-  showBack?: boolean;
+  /** Dashboard only: passing either handler shows the Import menu. */
+  onImportJson?: () => void;
+  onImportDockerCompose?: () => void;
+  /** Width of the inner row; match the page's content container so edges line up. */
+  containerClassName?: string;
 }
 
-export function Header({ projectName, showBack }: HeaderProps) {
+/** Sticky 56px app header for the dashboard and settings. The canvas has its own header. */
+export function Header({ onImportJson, onImportDockerCompose, containerClassName }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
+  const showImport = !!(onImportJson || onImportDockerCompose);
 
   return (
-    <header className="border-b border-border bg-card">
-      <div className="mx-auto flex h-14 items-center gap-3 px-4 md:px-6">
-        {showBack && (
-          <Link href="/">
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
-        )}
-        <Link href="/" className="flex items-center gap-2 font-semibold text-foreground">
-          <Boxes className="h-5 w-5 text-primary" />
+    <header className="sticky top-0 z-30 border-b border-line bg-[color-mix(in_oklch,var(--bg)_88%,transparent)] backdrop-blur-md">
+      <div className={cn('mx-auto flex h-14 w-full max-w-[1128px] items-center gap-3 px-6', containerClassName)}>
+        <Link
+          href="/"
+          className="focus-ring -ml-1 flex items-center gap-2.5 rounded-full py-1 pr-2 pl-1 text-[14px] font-semibold whitespace-nowrap text-ink"
+        >
+          <span className="inline-flex size-[26px] items-center justify-center rounded-[8px] bg-accent text-accent-ink">
+            <Boxes className="size-[15px]" />
+          </span>
           <span className="hidden sm:inline">System Design Canvas</span>
         </Link>
-        {projectName && (
-          <>
-            <span className="text-border">/</span>
-            <span className="text-sm text-muted-foreground truncate">{projectName}</span>
-          </>
-        )}
-        <div className="ml-auto flex items-center gap-1">
-          {showBack && <KeyboardShortcuts />}
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleTheme} aria-label="Toggle theme">
-            {theme === 'dark' ? (
-              <Sun className="h-4 w-4" />
-            ) : (
-              <Moon className="h-4 w-4" />
-            )}
-          </Button>
+
+        <div className="-mr-1.5 ml-auto flex items-center gap-1">
+          {showImport && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost">
+                  <Upload />
+                  Import
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {onImportJson && (
+                  <DropdownMenuItem onSelect={onImportJson}>
+                    <FileJson />
+                    Project JSON
+                  </DropdownMenuItem>
+                )}
+                {onImportDockerCompose && (
+                  <DropdownMenuItem onSelect={onImportDockerCompose}>
+                    <Container />
+                    Docker Compose
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          <SimpleTooltip label="Settings">
+            <Button variant="icon" asChild>
+              <Link href="/settings" aria-label="Settings">
+                <Settings2 className="size-4" />
+              </Link>
+            </Button>
+          </SimpleTooltip>
+
+          <SimpleTooltip label={theme === 'dark' ? 'Light theme' : 'Dark theme'}>
+            <Button variant="icon" onClick={toggleTheme} aria-label="Toggle theme">
+              {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
+            </Button>
+          </SimpleTooltip>
+
+          <SimpleTooltip label="GitHub">
+            <Button variant="icon" asChild>
+              <a
+                href="https://github.com/ozers/system-design-canvas"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="GitHub"
+              >
+                <Github className="size-4" />
+              </a>
+            </Button>
+          </SimpleTooltip>
         </div>
       </div>
     </header>

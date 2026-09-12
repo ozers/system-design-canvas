@@ -1,435 +1,390 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactElement, type ReactNode } from 'react';
 import { useReactFlow, useStore } from '@xyflow/react';
+import {
+  Container,
+  FileJson,
+  LayoutDashboard,
+  Lock,
+  LockOpen,
+  Minus,
+  MoreHorizontal,
+  MousePointerSquareDashed,
+  Plus,
+  Redo2,
+  SquareDashed,
+  StickyNote,
+  Trash2,
+  Undo2,
+} from 'lucide-react';
 import { useCanvasStore } from '@/stores/useCanvasStore';
-import { NODE_REGISTRY, getNodesByCategory } from '@/components/nodes/node-registry';
-import type { SystemNodeType, SystemNodeData, SystemNode } from '@/types';
+import { useIsNarrow } from '@/hooks/useMediaQuery';
 import { Button } from '@/components/ui/button';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
   DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, ZoomIn, ZoomOut, Maximize, Undo2, Redo2, Download, Upload, ImageIcon, FileCode, FileJson, FileText, Grid3x3, StickyNote, LayoutDashboard, Circle, Columns3, Hash, EyeOff, Share2, Check, Presentation, Loader2, CheckCircle2, Search, Container } from 'lucide-react';
-import { exportToPng, exportToSvg, exportToJson, importFromJson } from '@/lib/export';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { toast } from '@/stores/useToastStore';
+import { importFromJson } from '@/lib/export';
 import { importDockerCompose } from '@/lib/docker-compose';
-import { encodeCanvasToUrl } from '@/lib/share';
-import { exportToMermaid } from '@/lib/mermaid';
 import { getLayoutedElements } from '@/lib/auto-layout';
+import { getShortcutKeys } from '@/lib/shortcuts';
+import { cn } from '@/lib/utils';
+import type { SystemEdge, SystemNode } from '@/types';
+import { AddComponentSubmenus } from './AddComponentMenu';
+import { shortcutLabel, useAddNodeAtCenter } from './canvas-helpers';
 
-let nodeCounter = 0;
+const COARSE_HIT = '[@media(pointer:coarse)]:size-11';
 
-export function CanvasToolbar() {
-  const { zoomIn, zoomOut, fitView, zoomTo } = useReactFlow();
-  const zoom = useStore((s) => s.transform[2]);
-  const addNode = useCanvasStore((s) => s.addNode);
-  const nodes = useCanvasStore((s) => s.nodes);
-  const edges = useCanvasStore((s) => s.edges);
-  const setNodes = useCanvasStore((s) => s.setNodes);
-  const setEdges = useCanvasStore((s) => s.setEdges);
-  const pushHistory = useCanvasStore((s) => s.pushHistory);
-  const undo = useCanvasStore((s) => s.undo);
-  const redo = useCanvasStore((s) => s.redo);
-  const historyIndex = useCanvasStore((s) => s.historyIndex);
-  const historyLength = useCanvasStore((s) => s.history.length);
-  const snapToGrid = useCanvasStore((s) => s.snapToGrid);
-  const toggleSnapToGrid = useCanvasStore((s) => s.toggleSnapToGrid);
-  const backgroundVariant = useCanvasStore((s) => s.backgroundVariant);
-  const cycleBackground = useCanvasStore((s) => s.cycleBackground);
-  const togglePresentationMode = useCanvasStore((s) => s.togglePresentationMode);
-  const saveStatus = useCanvasStore((s) => s.saveStatus);
-  const selectedCount = useCanvasStore((s) => s.nodes.filter((n) => n.selected).length);
+function Divider() {
+  return <div aria-hidden className="mx-1.5 h-[18px] w-px shrink-0 bg-line" />;
+}
 
-  const undoCount = historyIndex;
-  const redoCount = historyLength - 1 - historyIndex;
+/** Icon button inside the pill. Disabled keeps its tooltip: opacity .35 + not-allowed. */
+function ToolbarIconButton({
+  label,
+  keys,
+  onClick,
+  disabled,
+  children,
+  className,
+}: {
+  label: string;
+  keys?: string[];
+  onClick: () => void;
+  disabled?: boolean;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <SimpleTooltip label={label} keys={keys} side="top">
+      <Button
+        variant="icon"
+        size="icon-toolbar"
+        aria-label={label}
+        aria-disabled={disabled || undefined}
+        onClick={disabled ? undefined : onClick}
+        className={cn(disabled && 'cursor-not-allowed opacity-35 hover:bg-transparent hover:text-ink-2', className)}
+      >
+        {children}
+      </Button>
+    </SimpleTooltip>
+  );
+}
 
-  const handleAddNode = (nodeType: SystemNodeType) => {
-    nodeCounter++;
-    const offset = (nodeCounter % 10) * 30;
-    const config = NODE_REGISTRY[nodeType];
-    const isGroup = nodeType === 'group';
-    const data: SystemNodeData = {
-      label: isGroup ? '' : config.label,
-      nodeType,
-      description: '',
-      techStack: [...config.defaultTechStack],
-    };
-    addNode({
-      id: `node-${Date.now()}-${nodeCounter}`,
-      type: isGroup ? 'group' : 'system',
-      position: { x: 250 + offset, y: 150 + offset },
-      ...(isGroup ? { style: { width: 300, height: 200 } } : {}),
-      data,
-    });
-  };
+function useToolbarActions() {
+  const { fitView } = useReactFlow();
 
-  const handleAutoLayout = () => {
+  const refit = () => requestAnimationFrame(() => fitView({ padding: 0.15, duration: 300 }));
+
+  const autoLayout = () => {
+    const { nodes, edges, pushHistory, setNodes } = useCanvasStore.getState();
     if (nodes.length === 0) return;
     pushHistory();
-    const { nodes: layoutedNodes } = getLayoutedElements(nodes, edges);
-    setNodes(layoutedNodes);
-    requestAnimationFrame(() => fitView({ padding: 0.15, duration: 300 }));
+    setNodes(getLayoutedElements(nodes, edges).nodes);
+    refit();
   };
 
-  const [shareIcon, setShareIcon] = useState<'share' | 'check'>('share');
-  const [mermaidCopied, setMermaidCopied] = useState(false);
-
-  const handleShare = () => {
-    const url = encodeCanvasToUrl(nodes, edges);
-    navigator.clipboard.writeText(url);
-    setShareIcon('check');
-    setTimeout(() => setShareIcon('share'), 2000);
-  };
-
-  const handleMermaidExport = () => {
-    const mermaid = exportToMermaid(nodes, edges);
-    navigator.clipboard.writeText(mermaid);
-    setMermaidCopied(true);
-    setTimeout(() => setMermaidCopied(false), 2000);
-  };
-
-  const handleImportJson = async () => {
+  const runImport = async (
+    kind: string,
+    read: () => Promise<{ nodes: SystemNode[]; edges: SystemEdge[] }>
+  ) => {
     try {
-      const { nodes: importedNodes, edges: importedEdges } = await importFromJson();
+      const imported = await read();
+      const { pushHistory, setNodes, setEdges } = useCanvasStore.getState();
       pushHistory();
-      setNodes(importedNodes);
-      setEdges(importedEdges);
-      requestAnimationFrame(() => fitView({ padding: 0.15, duration: 300 }));
-    } catch {
-      // User cancelled or invalid file — silently ignore
-    }
-  };
-
-  const [importError, setImportError] = useState<string | null>(null);
-
-  const handleImportDockerCompose = async () => {
-    try {
-      setImportError(null);
-      const { nodes: importedNodes, edges: importedEdges } = await importDockerCompose();
-      pushHistory();
-      setNodes(importedNodes);
-      setEdges(importedEdges);
-      requestAnimationFrame(() => fitView({ padding: 0.15, duration: 300 }));
+      setNodes(imported.nodes);
+      setEdges(imported.edges);
+      refit();
     } catch (err) {
-      if (err instanceof Error && err.message !== 'No file selected') {
-        setImportError(err.message);
-        setTimeout(() => setImportError(null), 4000);
-      }
+      if (err instanceof Error && err.message === 'No file selected') return;
+      const detail = err instanceof Error ? err.message : String(err);
+      toast({
+        message: `Couldn't read ${kind}`,
+        tone: 'danger',
+        action: { label: 'Details', onClick: () => toast({ message: detail, tone: 'danger' }) },
+      });
     }
   };
 
-  const handleAddNote = () => {
-    nodeCounter++;
-    const offset = (nodeCounter % 10) * 30;
-    addNode({
-      id: `note-${Date.now()}-${nodeCounter}`,
-      type: 'note',
-      position: { x: 300 + offset, y: 200 + offset },
-      data: {
-        label: '',
-        nodeType: 'service',
-        description: '',
-        techStack: [],
-      },
-    } as SystemNode);
+  return {
+    autoLayout,
+    importJson: () => runImport('JSON', importFromJson),
+    importCompose: () => runImport('docker-compose.yml', importDockerCompose),
   };
+}
+
+function MoreMenu({
+  narrow,
+  trigger,
+  onAddNote,
+  onAutoLayout,
+  onImportJson,
+  onImportCompose,
+  onClear,
+}: {
+  narrow: boolean;
+  trigger: ReactElement;
+  onAddNote: () => void;
+  onAutoLayout: () => void;
+  onImportJson: () => void;
+  onImportCompose: () => void;
+  onClear: () => void;
+}) {
+  const hasNodes = useCanvasStore((s) => s.nodes.length > 0);
+  const canUndo = useCanvasStore((s) => s.historyIndex > 0);
+  const canRedo = useCanvasStore((s) => s.historyIndex < s.history.length - 1);
+  const selectedCount = useCanvasStore((s) => s.nodes.reduce((n, node) => n + (node.selected ? 1 : 0), 0));
+  const allLocked = useCanvasStore((s) => {
+    const selected = s.nodes.filter((n) => n.selected);
+    return selected.length > 0 && selected.every((n) => n.draggable === false);
+  });
+
+  const withStore = (fn: (s: ReturnType<typeof useCanvasStore.getState>) => void) => () => fn(useCanvasStore.getState());
 
   return (
-    <TooltipProvider>
-      <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-lg border border-border bg-card p-1 shadow-lg" role="toolbar" aria-label="Canvas toolbar">
-        <DropdownMenu>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" aria-label="Add Node">
-                  <Plus className="h-4 w-4 md:mr-1" />
-                  <span className="hidden md:inline">Add Node</span>
-                </Button>
-              </DropdownMenuTrigger>
-            </TooltipTrigger>
-            <TooltipContent className="md:hidden">Add Node</TooltipContent>
-          </Tooltip>
-          <DropdownMenuContent>
-            {getNodesByCategory().map(({ category, types }) => (
-              <DropdownMenuSub key={category}>
-                <DropdownMenuSubTrigger>{category}</DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  {types.map(({ type, config }) => {
-                    const Icon = config.icon;
-                    return (
-                      <DropdownMenuItem key={type} onClick={() => handleAddNode(type)}>
-                        <Icon className={`h-4 w-4 mr-2 ${config.color}`} />
-                        {config.label}
-                      </DropdownMenuItem>
-                    );
-                  })}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="sm" onClick={handleAddNote} aria-label="Add Note">
-              <StickyNote className="h-4 w-4 md:mr-1" />
-              <span className="hidden md:inline">Note</span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent className="md:hidden">Note</TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
-              aria-label="Search"
-            >
-              <Search className="h-4 w-4 md:mr-1" />
-              <span className="hidden md:inline">Search</span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent className="md:hidden">Search (⌘K)</TooltipContent>
-        </Tooltip>
-
-        <div className="mx-1 h-6 w-px bg-border" />
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => zoomIn()} aria-label="Zoom in">
-              <ZoomIn className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Zoom In</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => zoomOut()} aria-label="Zoom out">
-              <ZoomOut className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Zoom Out</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => fitView()} aria-label="Fit view">
-              <Maximize className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Fit View</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              className="px-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-              onClick={() => zoomTo(1)}
-              aria-label="Reset zoom to 100%"
-            >
-              {Math.round(zoom * 100)}%
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>Reset to 100%</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`h-8 w-8 ${snapToGrid ? 'bg-accent text-accent-foreground' : ''}`}
-              onClick={toggleSnapToGrid}
-              aria-label="Toggle grid snap"
-            >
-              <Grid3x3 className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Grid Snap</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={cycleBackground}
-              aria-label="Toggle background"
-            >
-              {backgroundVariant === 'dots' && <Circle className="h-4 w-4" />}
-              {backgroundVariant === 'lines' && <Columns3 className="h-4 w-4" />}
-              {backgroundVariant === 'cross' && <Hash className="h-4 w-4" />}
-              {backgroundVariant === 'none' && <EyeOff className="h-4 w-4" />}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Background: {backgroundVariant}</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={handleAutoLayout}
-              disabled={nodes.length === 0}
-              aria-label="Auto layout"
-            >
-              <LayoutDashboard className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Auto Layout</TooltipContent>
-        </Tooltip>
-
-        <div className="mx-1 h-6 w-px bg-border" />
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative h-8 w-8"
-              onClick={undo}
-              disabled={historyIndex <= 0}
-              aria-label="Undo"
-            >
-              <Undo2 className="h-4 w-4" />
-              {undoCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-[9px] font-medium text-primary-foreground">
-                  {undoCount}
-                </span>
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Undo (Ctrl+Z)</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative h-8 w-8"
-              onClick={redo}
-              disabled={historyIndex >= historyLength - 1}
-              aria-label="Redo"
-            >
-              <Redo2 className="h-4 w-4" />
-              {redoCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-[9px] font-medium text-primary-foreground">
-                  {redoCount}
-                </span>
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Redo (Ctrl+Y)</TooltipContent>
-        </Tooltip>
-
-        <div className="mx-1 h-6 w-px bg-border" />
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="flex items-center gap-1 px-1.5 text-[10px] text-muted-foreground cursor-default tabular-nums">
-              {nodes.length}N &middot; {edges.length}E
-              {selectedCount > 0 && <>&middot; {selectedCount} sel</>}
-              {saveStatus === 'saving' && <Loader2 className="h-3 w-3 animate-spin" />}
-              {saveStatus === 'saved' && <CheckCircle2 className="h-3 w-3 text-green-500" />}
-            </span>
-          </TooltipTrigger>
-          <TooltipContent>
-            {nodes.length} node{nodes.length !== 1 ? 's' : ''}, {edges.length} edge{edges.length !== 1 ? 's' : ''}
-            {selectedCount > 0 && `, ${selectedCount} selected`}
-            {saveStatus === 'saving' && ' — Saving...'}
-            {saveStatus === 'saved' && ' — Saved'}
-          </TooltipContent>
-        </Tooltip>
-
-        <div className="mx-1 h-6 w-px bg-border" />
-
-        <DropdownMenu>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" aria-label="Export">
-                  <Download className="h-4 w-4 md:mr-1" />
-                  <span className="hidden md:inline">Export</span>
-                </Button>
-              </DropdownMenuTrigger>
-            </TooltipTrigger>
-            <TooltipContent className="md:hidden">Export</TooltipContent>
-          </Tooltip>
-          <DropdownMenuContent>
-            <DropdownMenuItem onClick={() => exportToPng()}>
-              <ImageIcon className="h-4 w-4 mr-2" />
-              PNG
+    <DropdownMenu modal={false}>
+      <SimpleTooltip label="More" side="top">
+        <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+      </SimpleTooltip>
+      <DropdownMenuContent side={narrow ? 'bottom' : 'top'} align="end" sideOffset={10} className="w-[220px]">
+        {narrow && (
+          <>
+            <DropdownMenuItem onSelect={onAddNote}>
+              <StickyNote />
+              Add note
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => exportToSvg()}>
-              <FileCode className="h-4 w-4 mr-2" />
-              SVG
+            <DropdownMenuItem onSelect={onAutoLayout} disabled={!hasNodes}>
+              <LayoutDashboard />
+              Auto layout
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={withStore((s) => s.undo())} disabled={!canUndo}>
+              <Undo2 />
+              Undo
+              <DropdownMenuShortcut>{shortcutLabel('undo')}</DropdownMenuShortcut>
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={withStore((s) => s.redo())} disabled={!canRedo}>
+              <Redo2 />
+              Redo
+              <DropdownMenuShortcut>{shortcutLabel('redo')}</DropdownMenuShortcut>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => exportToJson(nodes, edges)}>
-              <FileJson className="h-4 w-4 mr-2" />
-              JSON
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleMermaidExport}>
-              <FileText className="h-4 w-4 mr-2" />
-              {mermaidCopied ? 'Copied!' : 'Mermaid (clipboard)'}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </>
+        )}
+        <DropdownMenuItem onSelect={withStore((s) => s.selectAll())} disabled={!hasNodes}>
+          <MousePointerSquareDashed />
+          Select all
+          <DropdownMenuShortcut>{shortcutLabel('select-all')}</DropdownMenuShortcut>
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={withStore((s) => s.groupSelection())} disabled={selectedCount === 0}>
+          <SquareDashed />
+          Group selection
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onSelect={withStore((s) => s.toggleLock(s.nodes.filter((n) => n.selected).map((n) => n.id)))}
+          disabled={selectedCount === 0}
+        >
+          {allLocked ? <LockOpen /> : <Lock />}
+          {allLocked ? 'Unlock selection' : 'Lock selection'}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={onImportJson}>
+          <FileJson />
+          Import JSON
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onImportCompose}>
+          <Container />
+          Import docker-compose
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem variant="destructive" onSelect={onClear} disabled={!hasNodes}>
+          <Trash2 />
+          Clear canvas
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
-        <DropdownMenu>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" aria-label="Import">
-                  <Upload className="h-4 w-4 md:mr-1" />
-                  <span className="hidden md:inline">Import</span>
-                </Button>
-              </DropdownMenuTrigger>
-            </TooltipTrigger>
-            <TooltipContent className="md:hidden">Import</TooltipContent>
-          </Tooltip>
-          <DropdownMenuContent>
-            <DropdownMenuItem onClick={handleImportJson}>
-              <FileJson className="h-4 w-4 mr-2" />
-              JSON
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleImportDockerCompose}>
-              <Container className="h-4 w-4 mr-2" />
-              Docker Compose
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+function ClearCanvasDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const clearCanvas = useCanvasStore((s) => s.clearCanvas);
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-[360px]">
+        <DialogHeader>
+          <DialogTitle className="text-[15px]">Clear canvas?</DialogTitle>
+        </DialogHeader>
+        <DialogBody className="pt-1.5">
+          <DialogDescription className="mt-0 text-[13px]">
+            Removes every component and connection. You can undo this.
+          </DialogDescription>
+        </DialogBody>
+        <DialogFooter className="justify-end border-t-0 pt-0">
+          <Button variant="secondary" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="danger-solid"
+            onClick={() => {
+              clearCanvas();
+              onOpenChange(false);
+            }}
+          >
+            Clear
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleShare} disabled={nodes.length === 0} aria-label="Share">
-              {shareIcon === 'check' ? <Check className="h-4 w-4 text-green-500" /> : <Share2 className="h-4 w-4" />}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{shareIcon === 'check' ? 'Link Copied!' : 'Share Link'}</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={togglePresentationMode} aria-label="Presentation mode">
-              <Presentation className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Present (P)</TooltipContent>
-        </Tooltip>
-      </div>
-      {importError && (
-        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-1.5 text-xs text-destructive shadow-sm whitespace-nowrap">
-          {importError}
+export function CanvasToolbar() {
+  const narrow = useIsNarrow();
+  const { zoomIn, zoomOut, fitView } = useReactFlow();
+  const zoom = useStore((s) => s.transform[2]);
+  const addAtCenter = useAddNodeAtCenter();
+  const { autoLayout, importJson, importCompose } = useToolbarActions();
+  const hasNodes = useCanvasStore((s) => s.nodes.length > 0);
+  const canUndo = useCanvasStore((s) => s.historyIndex > 0);
+  const canRedo = useCanvasStore((s) => s.historyIndex < s.history.length - 1);
+  const undo = useCanvasStore((s) => s.undo);
+  const redo = useCanvasStore((s) => s.redo);
+  const setLibraryCollapsed = useCanvasStore((s) => s.setLibraryCollapsed);
+  const [clearOpen, setClearOpen] = useState(false);
+
+  const zoomPct = `${Math.round(zoom * 100)}%`;
+  const fit = () => fitView({ padding: 0.15, duration: 200 });
+
+  const moreProps = {
+    narrow,
+    onAddNote: () => addAtCenter('note'),
+    onAutoLayout: autoLayout,
+    onImportJson: importJson,
+    onImportCompose: importCompose,
+    onClear: () => setClearOpen(true),
+  };
+
+  if (narrow) {
+    return (
+      <>
+        <div
+          role="toolbar"
+          aria-label="Canvas toolbar"
+          className="absolute top-3 right-3 z-10 flex items-center gap-0.5 rounded-full border border-line bg-paper p-1 whitespace-nowrap shadow-[var(--shadow-lg)]"
+        >
+          <Button
+            variant="toolbar"
+            size="icon"
+            aria-label="Add component"
+            onClick={() => setLibraryCollapsed(false)}
+            className={COARSE_HIT}
+          >
+            <Plus className="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            aria-label="Fit view"
+            onClick={fit}
+            className="h-8 px-2 text-[12px] font-normal tabular-nums [@media(pointer:coarse)]:h-11"
+          >
+            {zoomPct}
+          </Button>
+          <MoreMenu
+            {...moreProps}
+            trigger={
+              <Button variant="icon" aria-label="More" className={COARSE_HIT}>
+                <MoreHorizontal className="size-4" />
+              </Button>
+            }
+          />
         </div>
-      )}
-    </TooltipProvider>
+        <ClearCanvasDialog open={clearOpen} onOpenChange={setClearOpen} />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <div
+        role="toolbar"
+        aria-label="Canvas toolbar"
+        className="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-0.5 rounded-full border border-line bg-paper p-[5px] whitespace-nowrap shadow-[var(--shadow-lg)]"
+      >
+        <DropdownMenu>
+          <SimpleTooltip label="Add component" side="top">
+            <DropdownMenuTrigger asChild>
+              <Button variant="toolbar" size="toolbar">
+                <Plus />
+                Add
+              </Button>
+            </DropdownMenuTrigger>
+          </SimpleTooltip>
+          <DropdownMenuContent side="top" align="start" sideOffset={10} className="w-[200px]">
+            <AddComponentSubmenus onAdd={addAtCenter} />
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <SimpleTooltip label="Add note" side="top">
+          <Button variant="ghost" size="toolbar" onClick={() => addAtCenter('note')}>
+            <StickyNote />
+            Note
+          </Button>
+        </SimpleTooltip>
+
+        <Divider />
+
+        <ToolbarIconButton label="Zoom out" onClick={() => zoomOut({ duration: 150 })}>
+          <Minus />
+        </ToolbarIconButton>
+        <SimpleTooltip label="Fit view" keys={getShortcutKeys('fit-view')} side="top">
+          <Button
+            variant="ghost"
+            size="toolbar"
+            onClick={fit}
+            className="min-w-[46px] px-2 text-[12.5px] font-normal tabular-nums"
+          >
+            {zoomPct}
+          </Button>
+        </SimpleTooltip>
+        <ToolbarIconButton label="Zoom in" onClick={() => zoomIn({ duration: 150 })}>
+          <Plus />
+        </ToolbarIconButton>
+
+        <Divider />
+
+        <ToolbarIconButton label="Auto layout" onClick={autoLayout} disabled={!hasNodes}>
+          <LayoutDashboard />
+        </ToolbarIconButton>
+        <ToolbarIconButton label="Undo" keys={getShortcutKeys('undo')} onClick={undo} disabled={!canUndo}>
+          <Undo2 />
+        </ToolbarIconButton>
+        <ToolbarIconButton label="Redo" keys={getShortcutKeys('redo')} onClick={redo} disabled={!canRedo}>
+          <Redo2 />
+        </ToolbarIconButton>
+        <MoreMenu
+          {...moreProps}
+          trigger={
+            <Button variant="icon" size="icon-toolbar" aria-label="More">
+              <MoreHorizontal />
+            </Button>
+          }
+        />
+      </div>
+      <ClearCanvasDialog open={clearOpen} onOpenChange={setClearOpen} />
+    </>
   );
 }

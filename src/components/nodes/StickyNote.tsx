@@ -1,57 +1,36 @@
 'use client';
 
-import { memo, useCallback } from 'react';
-import { type NodeProps, NodeResizer } from '@xyflow/react';
+import { memo } from 'react';
+import { NodeResizer, type NodeProps } from '@xyflow/react';
 import { useCanvasStore } from '@/stores/useCanvasStore';
-import { X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import type { SystemNode } from '@/types';
 
-interface StickyNoteData {
-  label: string;
-  nodeType: 'note';
-  description?: string;
-  techStack: string[];
-}
-
-type StickyNoteProps = NodeProps & { data: StickyNoteData };
-
-function StickyNoteComponent({ id, data, selected }: StickyNoteProps) {
+function StickyNoteComponent({ id, data, selected }: NodeProps<SystemNode>) {
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
-  const deleteNode = useCanvasStore((s) => s.deleteNode);
-
-  const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      updateNodeData(id, { label: e.target.value });
-    },
-    [id, updateNodeData]
-  );
+  const presenting = useCanvasStore((s) => s.presentation.active);
 
   return (
     <div
-      className={`min-w-[180px] min-h-[80px] rounded-md p-3 shadow-md transition-shadow bg-amber-100 dark:bg-amber-900/50 border border-amber-200 dark:border-amber-700 ${
-        selected ? 'ring-2 ring-ring shadow-lg' : ''
-      }`}
-    >
-      <NodeResizer
-        isVisible={!!selected}
-        minWidth={180}
-        minHeight={80}
-        lineClassName="!border-amber-500"
-        handleClassName="!w-2 !h-2 !bg-amber-500 !border-amber-500"
-      />
-      {selected && (
-        <button
-          className="absolute -right-2 -top-2 rounded-full bg-card shadow p-0.5 hover:bg-destructive/10"
-          onClick={() => deleteNode(id)}
-        >
-          <X className="h-3 w-3 text-muted-foreground" />
-        </button>
+      className={cn(
+        'flex size-full min-h-[80px] min-w-[180px] flex-col border border-note-line bg-note px-3 py-2.5 text-ink transition-shadow duration-[120ms] ease-out',
+        selected ? 'shadow-[0_0_0_3px_var(--accent-soft),var(--shadow)]' : 'shadow-[var(--shadow)]'
       )}
+      style={{ borderRadius: '10px 10px 10px 2px' }}
+    >
+      <NodeResizer isVisible={!!selected && !presenting} minWidth={180} minHeight={80} />
       <textarea
-        className="w-full resize-none bg-transparent text-sm text-foreground placeholder-muted-foreground outline-none"
+        aria-label="Note"
         rows={3}
-        value={data.label}
-        onChange={handleChange}
-        placeholder="Type a note..."
+        readOnly={presenting}
+        className="w-full flex-1 resize-none bg-transparent text-[12.5px] leading-[1.45] text-ink outline-none placeholder:text-ink-3"
+        value={data.label ?? ''}
+        placeholder="Type a note…"
+        onChange={(e) => updateNodeData(id, { label: e.target.value })}
+        onKeyDown={(e) => {
+          // Let Esc through to the canvas; keep ⌫ etc. from deleting the note.
+          if (e.key !== 'Escape') e.stopPropagation();
+        }}
       />
     </div>
   );

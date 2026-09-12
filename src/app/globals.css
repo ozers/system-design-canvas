@@ -1,198 +1,250 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "../styles/tokens.css";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+
+  --color-bg: var(--bg);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
   --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
-}
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-dots: var(--dots);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-note: var(--note);
+  --color-note-line: var(--note-line);
 
-:root {
-  --radius: 0.625rem;
-  --background: oklch(0.98 0.002 250);
-  --foreground: oklch(0.18 0.01 260);
-  --card: oklch(0.995 0.001 250);
-  --card-foreground: oklch(0.18 0.01 260);
-  --popover: oklch(0.995 0.001 250);
-  --popover-foreground: oklch(0.18 0.01 260);
-  --primary: oklch(0.24 0.01 260);
-  --primary-foreground: oklch(0.98 0 0);
-  --secondary: oklch(0.955 0.003 250);
-  --secondary-foreground: oklch(0.24 0.01 260);
-  --muted: oklch(0.955 0.003 250);
-  --muted-foreground: oklch(0.52 0.01 260);
-  --accent: oklch(0.955 0.003 250);
-  --accent-foreground: oklch(0.24 0.01 260);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.91 0.004 250);
-  --input: oklch(0.91 0.004 250);
-  --ring: oklch(0.68 0.01 260);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.97 0.002 250);
-  --sidebar-foreground: oklch(0.18 0.01 260);
-  --sidebar-primary: oklch(0.24 0.01 260);
-  --sidebar-primary-foreground: oklch(0.98 0 0);
-  --sidebar-accent: oklch(0.955 0.003 250);
-  --sidebar-accent-foreground: oklch(0.24 0.01 260);
-  --sidebar-border: oklch(0.91 0.004 250);
-  --sidebar-ring: oklch(0.68 0.01 260);
-}
+  --radius-chip: 6px;
+  --radius-input: 9px;
+  --radius-card: 12px;
+  --radius-panel: 14px;
+  --radius-dialog: 16px;
 
-.dark {
-  --background: oklch(0.185 0.005 260);
-  --foreground: oklch(0.93 0.003 250);
-  --card: oklch(0.22 0.006 260);
-  --card-foreground: oklch(0.93 0.003 250);
-  --popover: oklch(0.22 0.006 260);
-  --popover-foreground: oklch(0.93 0.003 250);
-  --primary: oklch(0.88 0.003 250);
-  --primary-foreground: oklch(0.22 0.006 260);
-  --secondary: oklch(0.27 0.008 260);
-  --secondary-foreground: oklch(0.93 0.003 250);
-  --muted: oklch(0.27 0.008 260);
-  --muted-foreground: oklch(0.65 0.008 260);
-  --accent: oklch(0.27 0.008 260);
-  --accent-foreground: oklch(0.93 0.003 250);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 8%);
-  --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.50 0.008 260);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.20 0.005 260);
-  --sidebar-foreground: oklch(0.93 0.003 250);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.93 0.003 250);
-  --sidebar-accent: oklch(0.27 0.008 260);
-  --sidebar-accent-foreground: oklch(0.93 0.003 250);
-  --sidebar-border: oklch(1 0 0 / 8%);
-  --sidebar-ring: oklch(0.50 0.008 260);
+  --shadow-1: var(--shadow);
+  --shadow-2: var(--shadow-lg);
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    border-color: var(--line);
+  }
+  html {
+    color-scheme: light;
+  }
+  html[data-theme="dark"] {
+    color-scheme: dark;
   }
   body {
-    @apply bg-background text-foreground;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection {
+    background: var(--accent-soft);
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
   }
 }
 
-/* React Flow dark mode overrides */
-.dark .react-flow__controls-button {
-  --xy-controls-button-background-color-default: #2a2f3a;
-  --xy-controls-button-border-color-default: #3a4050;
-  --xy-controls-button-color-default: #c8cdd5;
+/* Keyboard focus ring for any control: accent border + 3px soft ring. */
+@utility focus-ring {
+  outline: none;
+  &:focus-visible {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
 }
 
-.dark .react-flow__controls-button:hover {
-  --xy-controls-button-background-color-hover-default: #3a4050;
-  --xy-controls-button-color-hover-default: #e8ecf0;
+/* Canvas dot grid used outside React Flow (thumbnails, empty states). */
+@utility dot-grid {
+  background-color: var(--bg);
+  background-image: radial-gradient(var(--dots) 1px, transparent 1px);
+  background-size: 20px 20px;
 }
 
-.dark .react-flow__controls {
-  --xy-controls-box-shadow-default: 0 0 2px 1px rgba(0, 0, 0, 0.2);
+/* ── Motion ─────────────────────────────────────────── */
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
 }
-
-.dark .react-flow__minimap {
-  --xy-minimap-background-color-default: #1e2330;
+@keyframes panel-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
 }
-
-.react-flow__minimap-mask {
-  --xy-minimap-mask-background-color-default: rgba(0, 0, 0, 0.1);
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
 }
-
-.dark .react-flow__minimap-mask {
-  --xy-minimap-mask-background-color-default: rgba(0, 0, 0, 0.45);
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
 }
-
-.dark .react-flow__minimap-node {
-  --xy-minimap-node-background-color-default: #3a4050;
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
 }
-
-.dark .react-flow__attribution {
-  --xy-attribution-background-color-default: rgba(30, 35, 48, 0.5);
+@keyframes status-pulse {
+  50% {
+    opacity: 0.35;
+  }
 }
-
-.dark .react-flow__attribution a {
-  color: #6b7280;
-}
-
-.dark .react-flow__handle {
-  --xy-handle-background-color-default: #8890a0;
-  --xy-handle-border-color-default: #2a2f3a;
-}
-
-.dark .react-flow__edge-path {
-  stroke: #5a6270;
-}
-
-/* Background colors are now set via the color prop in Canvas.tsx */
-
-/* Enhanced edge animations */
 @keyframes edge-flow {
   to {
     stroke-dashoffset: -24;
   }
 }
-
 @keyframes edge-flow-fast {
   to {
     stroke-dashoffset: -20;
   }
 }
 
+.animate-panel-in {
+  animation: panel-in 160ms ease-out;
+}
+.animate-panel-in-right {
+  animation: panel-in-right 160ms ease-out;
+}
+.animate-dialog-in {
+  animation: dialog-in 160ms ease-out;
+}
+.animate-fade-in {
+  animation: fade-in 160ms ease-out;
+}
+.animate-toast-in {
+  animation: toast-in 160ms ease-out;
+}
+.animate-status-pulse {
+  animation: status-pulse 1s ease-in-out infinite;
+}
 .edge-animated-slow {
   animation: edge-flow 3s linear infinite;
 }
-
 .edge-animated-fast {
   animation: edge-flow-fast 1.5s linear infinite;
+}
+.edges-static .edge-animated-slow,
+.edges-static .edge-animated-fast {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .edge-animated-slow,
+  .edge-animated-fast,
+  .animate-status-pulse {
+    animation: none;
+  }
+  .animate-panel-in,
+  .animate-panel-in-right,
+  .animate-dialog-in,
+  .animate-fade-in,
+  .animate-toast-in {
+    animation-duration: 1ms;
+  }
+  .react-flow__node,
+  .react-flow__edge {
+    transition: none !important;
+  }
+}
+
+/* ── React Flow ─────────────────────────────────────── */
+.react-flow {
+  --xy-background-color-default: transparent;
+  --xy-edge-stroke-default: var(--ink-3);
+  --xy-edge-stroke-selected-default: var(--accent);
+  --xy-connectionline-stroke-default: var(--accent);
+  --xy-attribution-background-color-default: transparent;
+  --xy-selection-background-color-default: color-mix(in oklch, var(--accent-soft) 35%, transparent);
+  --xy-selection-border-default: 1px solid var(--accent);
+  --xy-resize-background-color-default: var(--accent);
+  --xy-handle-background-color-default: var(--ink-3);
+  --xy-handle-border-color-default: var(--paper);
+}
+
+.react-flow__node {
+  transition: opacity 200ms ease;
+}
+.react-flow__edge {
+  transition: opacity 200ms ease;
+}
+
+/* Node handles: 8px dots, hidden until hover/selected. */
+.react-flow__handle {
+  width: 8px;
+  height: 8px;
+  min-width: 0;
+  min-height: 0;
+  border: 2px solid var(--paper);
+  background: var(--ink-3);
+  opacity: 0;
+  transition:
+    opacity 120ms ease,
+    background-color 120ms ease;
+}
+.react-flow__node:hover .react-flow__handle,
+.react-flow__node.selected .react-flow__handle,
+.react-flow.connecting .react-flow__handle {
+  opacity: 1;
+}
+.react-flow__node.selected .react-flow__handle {
+  background: var(--accent);
+}
+@media (pointer: coarse) {
+  .react-flow__handle {
+    opacity: 1;
+  }
+  .react-flow__handle::after {
+    content: "";
+    position: absolute;
+    inset: -5px;
+  }
+}
+
+.react-flow__resize-control.handle {
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--paper);
+  background: var(--accent);
+  border-radius: 2px;
+}
+.react-flow__resize-control.line {
+  border-color: var(--accent);
+}
+
+.react-flow__attribution {
+  font-size: 10px;
+}
+.react-flow__attribution a {
+  color: var(--ink-3);
+}
+
+.react-flow__minimap {
+  background: color-mix(in oklch, var(--paper) 85%, transparent);
+  backdrop-filter: blur(6px);
 }

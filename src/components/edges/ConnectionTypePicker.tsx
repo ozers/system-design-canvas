@@ -1,72 +1,75 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useCanvasStore } from '@/stores/useCanvasStore';
-import { EDGE_REGISTRY } from './edge-registry';
-import { SYSTEM_EDGE_TYPES, type SystemEdgeType } from '@/types';
+import { ProtocolMenu } from './ProtocolPicker';
 
+const MENU_WIDTH = 200;
+/** Header + 9 items + padding. */
+const MENU_HEIGHT = 340;
+const GAP = 12;
+const MARGIN = 8;
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), Math.max(min, max));
+}
+
+/**
+ * Protocol menu shown right after a new connection is drawn.
+ * `pendingEdge.position` is in client coordinates, so the menu is portaled
+ * to <body> and positioned `fixed`, clamped to the viewport.
+ */
 export function ConnectionTypePicker() {
   const pendingEdge = useCanvasStore((s) => s.pendingEdge);
+  const presenting = useCanvasStore((s) => s.presentation.active);
+  const currentType = useCanvasStore((s) => {
+    const pending = s.pendingEdge;
+    return pending ? s.edges.find((e) => e.id === pending.edgeId)?.data?.edgeType : undefined;
+  });
   const setPendingEdge = useCanvasStore((s) => s.setPendingEdge);
   const updateEdgeData = useCanvasStore((s) => s.updateEdgeData);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!pendingEdge) return;
-    const handleClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setPendingEdge(null);
-      }
+    const handlePointerDown = (e: PointerEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setPendingEdge(null);
     };
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setPendingEdge(null);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      setPendingEdge(null);
     };
-    document.addEventListener('mousedown', handleClick);
-    document.addEventListener('keydown', handleKey);
+    document.addEventListener('pointerdown', handlePointerDown, true);
+    document.addEventListener('keydown', handleKeyDown, true);
+    // Focus the current protocol so arrow keys work right away.
+    ref.current?.querySelector<HTMLElement>('[aria-checked="true"]')?.focus({ preventScroll: true });
     return () => {
-      document.removeEventListener('mousedown', handleClick);
-      document.removeEventListener('keydown', handleKey);
+      document.removeEventListener('pointerdown', handlePointerDown, true);
+      document.removeEventListener('keydown', handleKeyDown, true);
     };
   }, [pendingEdge, setPendingEdge]);
 
-  if (!pendingEdge) return null;
+  if (!pendingEdge || presenting || !currentType) return null;
 
-  const handleSelect = (edgeType: SystemEdgeType) => {
-    updateEdgeData(pendingEdge.edgeId, { edgeType });
-    setPendingEdge(null);
-  };
+  const { x, y } = pendingEdge.position;
+  const left = clamp(x - MENU_WIDTH / 2, MARGIN, window.innerWidth - MENU_WIDTH - MARGIN);
+  const fitsBelow = y + GAP + MENU_HEIGHT <= window.innerHeight - MARGIN;
+  const top = fitsBelow ? y + GAP : Math.max(MARGIN, y - GAP - MENU_HEIGHT);
 
-  return (
-    <div
+  return createPortal(
+    <ProtocolMenu
       ref={ref}
-      className="absolute z-50 rounded-lg border border-border bg-card p-1.5 shadow-lg"
-      style={{
-        left: pendingEdge.position.x,
-        top: pendingEdge.position.y,
-        transform: 'translate(-50%, -100%) translateY(-8px)',
+      title="Connection type"
+      value={currentType}
+      onSelect={(edgeType) => {
+        if (edgeType !== currentType) updateEdgeData(pendingEdge.edgeId, { edgeType });
+        setPendingEdge(null);
       }}
-    >
-      <p className="px-1.5 pb-1 text-[10px] font-medium text-muted-foreground">
-        Connection type
-      </p>
-      <div className="grid grid-cols-2 gap-0.5">
-        {SYSTEM_EDGE_TYPES.map((type) => {
-          const config = EDGE_REGISTRY[type];
-          return (
-            <button
-              key={type}
-              onClick={() => handleSelect(type)}
-              className="flex items-center gap-1.5 rounded px-2 py-1 text-xs transition-colors hover:bg-accent"
-            >
-              <span
-                className="h-2 w-2 shrink-0 rounded-full"
-                style={{ backgroundColor: config.color }}
-              />
-              {config.label}
-            </button>
-          );
-        })}
-      </div>
-    </div>
+      className="animate-fade-in fixed z-50"
+      style={{ left, top }}
+    />,
+    document.body
   );
 }

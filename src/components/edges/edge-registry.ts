@@ -5,6 +5,8 @@ export interface EdgeTypeConfig {
   color: string;
   strokeDasharray?: string;
   animated: boolean;
+  /** Animated edges that flow at the fast (1.5s) speed. */
+  fast?: boolean;
 }
 
 export const EDGE_REGISTRY: Record<SystemEdgeType, EdgeTypeConfig> = {
@@ -28,18 +30,21 @@ export const EDGE_REGISTRY: Record<SystemEdgeType, EdgeTypeConfig> = {
     color: '#a855f7', // purple-500
     strokeDasharray: '5 5',
     animated: true,
+    fast: true,
   },
   'pub-sub': {
     label: 'Pub/Sub',
     color: '#ec4899', // pink-500
     strokeDasharray: '8 4',
     animated: true,
+    fast: true,
   },
   mqtt: {
     label: 'MQTT',
     color: '#7c3aed', // violet-600
     strokeDasharray: '6 3',
     animated: true,
+    fast: true,
   },
   'event-stream': {
     label: 'SSE',
@@ -59,3 +64,9 @@ export const EDGE_REGISTRY: Record<SystemEdgeType, EdgeTypeConfig> = {
     animated: false,
   },
 };
+
+/** CSS class for an edge's flow animation, or '' when static. */
+export function edgeAnimationClass(config: EdgeTypeConfig) {
+  if (!config.animated) return '';
+  return config.fast ? 'edge-animated-fast' : 'edge-animated-slow';
+}
