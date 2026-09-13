@@ -54,6 +54,8 @@ export const SystemNodeDataSchema = z.object({
   label: z.string(),
   nodeType: z.enum(SYSTEM_NODE_TYPES),
   description: z.string().optional(),
+  /** Narration shown on the story card in presentation mode. */
+  story: z.string().optional(),
   techStack: z.array(z.string()).default([]),
   status: z.enum(NODE_STATUSES).optional(),
   environment: z.enum(NODE_ENVIRONMENTS).optional(),

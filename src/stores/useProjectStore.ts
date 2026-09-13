@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { loadAppData, saveAppData } from '@/lib/storage';
+import { clearAppData, loadAppData, saveAppData } from '@/lib/storage';
 import type { Project, AppData } from '@/types';
 
 interface ProjectStore {
@@ -13,8 +13,15 @@ interface ProjectStore {
   duplicateProject: (id: string) => Project | null;
   importProject: (json: string) => Project | null;
   exportProject: (id: string) => string | null;
-  saveProject: (project: Project) => void;
+  /** Returns false when localStorage refused the write. */
+  saveProject: (project: Project) => boolean;
   setLastOpened: (id: string | null) => void;
+  /** Put a deleted project back (same id). No-op if it still exists. */
+  restoreProject: (project: Project) => void;
+  /** Add projects from an exported file. Each gets a fresh id; timestamps are kept when present. */
+  importProjects: (items: Partial<Project>[]) => Project[];
+  /** Remove every project from memory and from this browser. */
+  clearAllProjects: () => void;
 }
 
 export const useProjectStore = create<ProjectStore>((set, get) => ({
@@ -113,20 +120,49 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       p.id === project.id ? { ...project, updatedAt: new Date().toISOString() } : p
     );
     set({ projects });
-    persist(get());
+    return persist(get());
   },
 
   setLastOpened: (id) => {
     set({ lastOpenedProjectId: id });
     persist(get());
   },
+
+  restoreProject: (project) => {
+    if (get().projects.some((p) => p.id === project.id)) return;
+    set({ projects: [...get().projects, project] });
+    persist(get());
+  },
+
+  importProjects: (items) => {
+    const now = new Date().toISOString();
+    const imported: Project[] = items.map((item) => ({
+      id: crypto.randomUUID(),
+      name: item.name || 'Imported Project',
+      description: item.description || '',
+      createdAt: typeof item.createdAt === 'string' ? item.createdAt : now,
+      updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : now,
+      nodes: Array.isArray(item.nodes) ? item.nodes : [],
+      edges: Array.isArray(item.edges) ? item.edges : [],
+      viewport: item.viewport ?? { x: 0, y: 0, zoom: 1 },
+    }));
+    if (imported.length === 0) return imported;
+    set({ projects: [...get().projects, ...imported] });
+    persist(get());
+    return imported;
+  },
+
+  clearAllProjects: () => {
+    set({ projects: [], lastOpenedProjectId: null });
+    clearAppData();
+  },
 }));
 
-function persist(state: ProjectStore) {
+function persist(state: ProjectStore): boolean {
   const data: AppData = {
     version: 1,
     projects: state.projects,
     lastOpenedProjectId: state.lastOpenedProjectId,
   };
-  saveAppData(data);
+  return saveAppData(data);
 }

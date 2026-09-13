@@ -8,6 +8,15 @@ export function encodeCanvasToUrl(nodes: SystemNode[], edges: SystemEdge[]): str
   return `${base}/canvas/shared?d=${compressed}`;
 }
 
+/** Share links above this size may be truncated by chat apps and some browsers. */
+export const SHARE_URL_WARN_BYTES = 8 * 1024;
+
+/** Byte length of a share URL (UTF-8). */
+export function getShareStats(url: string): { bytes: number; tooLong: boolean } {
+  const bytes = new TextEncoder().encode(url).length;
+  return { bytes, tooLong: bytes > SHARE_URL_WARN_BYTES };
+}
+
 export function decodeCanvasFromUrl(encoded: string): { nodes: SystemNode[]; edges: SystemEdge[] } | null {
   try {
     const decompressed = LZString.decompressFromEncodedURIComponent(encoded);

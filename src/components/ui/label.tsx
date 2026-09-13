@@ -13,7 +13,7 @@ function Label({
     <LabelPrimitive.Root
       data-slot="label"
       className={cn(
-        "flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
+        "text-[12px] leading-4 font-medium text-ink-2 select-none peer-disabled:opacity-50",
         className
       )}
       {...props}
@@ -21,4 +21,27 @@ function Label({
   )
 }
 
-export { Label }
+/** Labeled form field: 12px label above the control, 6px gap. */
+function Field({
+  label,
+  hint,
+  className,
+  children,
+}: {
+  label: React.ReactNode
+  hint?: React.ReactNode
+  className?: string
+  children: React.ReactNode
+}) {
+  return (
+    <label className={cn("grid gap-1.5", className)}>
+      <span className="text-[12px] leading-4 font-medium text-ink-2">
+        {label}
+        {hint && <span className="ml-1 font-normal text-ink-3">{hint}</span>}
+      </span>
+      {children}
+    </label>
+  )
+}
+
+export { Label, Field }

@@ -4,54 +4,68 @@ import { useEffect, useRef } from 'react';
 import { useCanvasStore } from '@/stores/useCanvasStore';
 import { useProjectStore } from '@/stores/useProjectStore';
 
-export function useAutoSave() {
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const clearSavedRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+const DEBOUNCE_MS = 500;
+const RETRY_MS = 3000;
 
+/** Write the active canvas into its project. Returns false when localStorage refused the write. */
+function persistCanvas(): boolean {
+  const { nodes, edges, viewport, projectId } = useCanvasStore.getState();
+  if (!projectId) return true;
+  const projectStore = useProjectStore.getState();
+  const project = projectStore.projects.find((p) => p.id === projectId);
+  if (!project) return true;
+  return projectStore.saveProject({ ...project, nodes, edges, viewport });
+}
+
+/** Debounced save (500ms) + beforeunload. Drives saveStatus; retries every 3s after a failure. */
+export function useAutoSave() {
   const nodes = useCanvasStore((s) => s.nodes);
   const edges = useCanvasStore((s) => s.edges);
   const viewport = useCanvasStore((s) => s.viewport);
   const projectId = useCanvasStore((s) => s.projectId);
-  const setSaveStatus = useCanvasStore((s) => s.setSaveStatus);
 
-  const projects = useProjectStore((s) => s.projects);
-  const saveProject = useProjectStore((s) => s.saveProject);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Debounced save on changes
   useEffect(() => {
     if (!projectId) return;
+    const { saveStatus, setSaveStatus } = useCanvasStore.getState();
+    // While offline, keep showing the error until a retry succeeds.
+    if (saveStatus !== 'error') setSaveStatus('saving');
 
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    if (clearSavedRef.current) clearTimeout(clearSavedRef.current);
-
-    setSaveStatus('saving');
-
-    timeoutRef.current = setTimeout(() => {
-      const project = projects.find((p) => p.id === projectId);
-      if (project) {
-        saveProject({ ...project, nodes, edges, viewport });
-        setSaveStatus('saved');
-        clearSavedRef.current = setTimeout(() => setSaveStatus('idle'), 2000);
+    const attempt = () => {
+      debounceRef.current = null;
+      if (retryRef.current) clearTimeout(retryRef.current);
+      retryRef.current = null;
+      if (persistCanvas()) {
+        useCanvasStore.getState().setSaveStatus('saved');
+      } else {
+        useCanvasStore.getState().setSaveStatus('error');
+        retryRef.current = setTimeout(attempt, RETRY_MS);
       }
-    }, 500);
-
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (clearSavedRef.current) clearTimeout(clearSavedRef.current);
     };
-  }, [nodes, edges, viewport, projectId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Save on beforeunload
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(attempt, DEBOUNCE_MS);
+  }, [nodes, edges, viewport, projectId]);
+
+  // Flush a pending save when leaving the canvas; stop retrying.
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+        persistCanvas();
+      }
+      if (retryRef.current) clearTimeout(retryRef.current);
+    };
+  }, []);
+
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (!projectId) return;
-      const project = projects.find((p) => p.id === projectId);
-      if (project) {
-        saveProject({ ...project, nodes, edges, viewport });
-      }
+      persistCanvas();
     };
-
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }); // intentionally no deps — always latest refs
+  }, []);
 }

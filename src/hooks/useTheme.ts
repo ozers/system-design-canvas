@@ -1,67 +1,52 @@
 'use client';
 
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
+import { useSettingsStore, type ThemePreference } from '@/stores/useSettingsStore';
 
-type Theme = 'light' | 'dark';
+export type ResolvedTheme = 'light' | 'dark';
 
-const THEME_KEY = 'system-design-canvas-theme';
+const DARK_QUERY = '(prefers-color-scheme: dark)';
 
-let currentTheme: Theme = 'light';
-let listeners: Array<() => void> = [];
-
-function emitChange() {
-  for (const listener of listeners) {
-    listener();
-  }
+function subscribeSystem(listener: () => void) {
+  const mq = window.matchMedia(DARK_QUERY);
+  mq.addEventListener('change', listener);
+  return () => mq.removeEventListener('change', listener);
 }
 
-function subscribe(listener: () => void) {
-  listeners = [...listeners, listener];
-  return () => {
-    listeners = listeners.filter((l) => l !== listener);
-  };
+function getSystemSnapshot(): ResolvedTheme {
+  return window.matchMedia(DARK_QUERY).matches ? 'dark' : 'light';
 }
 
-function getSnapshot(): Theme {
-  return currentTheme;
-}
-
-function getServerSnapshot(): Theme {
+function getServerSnapshot(): ResolvedTheme {
   return 'light';
 }
 
-function applyTheme(theme: Theme) {
-  const root = document.documentElement;
-  if (theme === 'dark') {
-    root.classList.add('dark');
-  } else {
-    root.classList.remove('dark');
-  }
+function resolve(preference: ThemePreference, system: ResolvedTheme): ResolvedTheme {
+  return preference === 'system' ? system : preference;
 }
 
-// Read stored theme at module load (client only) — but DON'T touch the DOM
-if (typeof window !== 'undefined') {
-  const stored = localStorage.getItem(THEME_KEY);
-  if (stored === 'dark' || stored === 'light') {
-    currentTheme = stored;
-  } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    currentTheme = 'dark';
-  }
-}
-
+/** Current theme preference plus the resolved light/dark value. */
 export function useTheme() {
-  const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-
-  // Apply class to DOM only in effect (after hydration)
-  useEffect(() => {
-    applyTheme(theme);
-    localStorage.setItem(THEME_KEY, theme);
-  }, [theme]);
+  const preference = useSettingsStore((s) => s.theme);
+  const setPreference = useSettingsStore((s) => s.setTheme);
+  const system = useSyncExternalStore(subscribeSystem, getSystemSnapshot, getServerSnapshot);
+  const theme = resolve(preference, system);
 
   const toggleTheme = useCallback(() => {
-    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    emitChange();
-  }, []);
+    setPreference(theme === 'dark' ? 'light' : 'dark');
+  }, [theme, setPreference]);
 
-  return { theme, toggleTheme };
+  return { theme, preference, setPreference, toggleTheme };
+}
+
+/** Mount once (in Providers): keeps <html data-theme> in sync with settings. */
+export function useApplyTheme() {
+  const hydrated = useSettingsStore((s) => s.hydrated);
+  const { theme } = useTheme();
+
+  useEffect(() => {
+    // Before rehydration the store holds defaults; the inline head script already set the right value.
+    if (!hydrated) return;
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme, hydrated]);
 }

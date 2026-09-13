@@ -7,7 +7,7 @@ import {
   Monitor,
   Globe,
   Shield,
-  BoxSelect,
+  SquareDashed,
   Globe2,
   ShieldCheck,
   Cog,
@@ -19,6 +19,7 @@ import {
   Clock,
   ScrollText,
   Activity,
+  Shapes,
   type LucideIcon,
 } from 'lucide-react';
 import type { SystemNodeType } from '@/types';
@@ -40,15 +41,24 @@ export const NODE_CATEGORIES: NodeCategory[] = [
   'Other',
 ];
 
+/** One icon per category, used by the collapsed library rail. */
+export const CATEGORY_ICONS: Record<NodeCategory, LucideIcon> = {
+  'Client & Edge': Monitor,
+  Compute: Server,
+  Data: Database,
+  Async: Radio,
+  Observability: Activity,
+  Other: Shapes,
+};
+
 export interface NodeTypeConfig {
   label: string;
   icon: LucideIcon;
+  /** Component color (Tailwind 600 shade). Used only for the icon, icon chip tint and minimap. */
   color: string;
-  bgColor: string;
-  borderColor: string;
-  darkBgColor: string;
-  darkBorderColor: string;
   defaultTechStack: string[];
+  /** Quick-add suggestions in the node editor's tech stack field. */
+  suggestedTech: string[];
   category: NodeCategory;
 }
 
@@ -57,67 +67,49 @@ export const NODE_REGISTRY: Record<SystemNodeType, NodeTypeConfig> = {
   client: {
     label: 'Client',
     icon: Monitor,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50',
-    borderColor: 'border-purple-300',
-    darkBgColor: 'dark:bg-purple-950',
-    darkBorderColor: 'dark:border-purple-700',
+    color: '#9333ea', // purple-600
     defaultTechStack: [],
+    suggestedTech: ['React', 'Next.js', 'iOS', 'Android'],
     category: 'Client & Edge',
   },
   cdn: {
     label: 'CDN',
     icon: Globe,
-    color: 'text-teal-600',
-    bgColor: 'bg-teal-50',
-    borderColor: 'border-teal-300',
-    darkBgColor: 'dark:bg-teal-950',
-    darkBorderColor: 'dark:border-teal-700',
+    color: '#0d9488', // teal-600
     defaultTechStack: ['CloudFront'],
+    suggestedTech: ['CloudFront', 'Cloudflare', 'Fastly'],
     category: 'Client & Edge',
   },
   dns: {
     label: 'DNS',
     icon: Globe2,
-    color: 'text-sky-600',
-    bgColor: 'bg-sky-50',
-    borderColor: 'border-sky-300',
-    darkBgColor: 'dark:bg-sky-950',
-    darkBorderColor: 'dark:border-sky-700',
+    color: '#0284c7', // sky-600
     defaultTechStack: ['Route 53'],
+    suggestedTech: ['Route 53', 'Cloudflare DNS'],
     category: 'Client & Edge',
   },
   waf: {
     label: 'WAF',
     icon: ShieldCheck,
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-50',
-    borderColor: 'border-orange-300',
-    darkBgColor: 'dark:bg-orange-950',
-    darkBorderColor: 'dark:border-orange-700',
+    color: '#ea580c', // orange-600
     defaultTechStack: ['AWS WAF'],
+    suggestedTech: ['AWS WAF', 'Cloudflare WAF'],
     category: 'Client & Edge',
   },
   'load-balancer': {
     label: 'Load Balancer',
     icon: Scale,
-    color: 'text-indigo-600',
-    bgColor: 'bg-indigo-50',
-    borderColor: 'border-indigo-300',
-    darkBgColor: 'dark:bg-indigo-950',
-    darkBorderColor: 'dark:border-indigo-700',
+    color: '#4f46e5', // indigo-600
     defaultTechStack: ['Nginx'],
+    suggestedTech: ['Nginx', 'HAProxy', 'AWS ALB', 'Envoy'],
     category: 'Client & Edge',
   },
   'api-gateway': {
     label: 'API Gateway',
     icon: Shield,
-    color: 'text-red-600',
-    bgColor: 'bg-red-50',
-    borderColor: 'border-red-300',
-    darkBgColor: 'dark:bg-red-950',
-    darkBorderColor: 'dark:border-red-700',
+    color: '#dc2626', // red-600
     defaultTechStack: [],
+    suggestedTech: ['Kong', 'AWS API Gateway', 'Apigee'],
     category: 'Client & Edge',
   },
 
@@ -125,45 +117,33 @@ export const NODE_REGISTRY: Record<SystemNodeType, NodeTypeConfig> = {
   service: {
     label: 'Service',
     icon: Server,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-300',
-    darkBgColor: 'dark:bg-blue-950',
-    darkBorderColor: 'dark:border-blue-700',
+    color: '#2563eb', // blue-600
     defaultTechStack: [],
+    suggestedTech: ['Node.js', 'Go', 'Python', 'Java'],
     category: 'Compute',
   },
   worker: {
     label: 'Worker',
     icon: Cog,
-    color: 'text-slate-600',
-    bgColor: 'bg-slate-50',
-    borderColor: 'border-slate-300',
-    darkBgColor: 'dark:bg-slate-950',
-    darkBorderColor: 'dark:border-slate-700',
+    color: '#475569', // slate-600
     defaultTechStack: [],
+    suggestedTech: ['Celery', 'Sidekiq', 'BullMQ'],
     category: 'Compute',
   },
   serverless: {
     label: 'Serverless',
     icon: CloudLightning,
-    color: 'text-violet-600',
-    bgColor: 'bg-violet-50',
-    borderColor: 'border-violet-300',
-    darkBgColor: 'dark:bg-violet-950',
-    darkBorderColor: 'dark:border-violet-700',
+    color: '#7c3aed', // violet-600
     defaultTechStack: ['AWS Lambda'],
+    suggestedTech: ['AWS Lambda', 'Cloudflare Workers', 'TypeScript'],
     category: 'Compute',
   },
   'container-cluster': {
     label: 'Container Cluster',
     icon: Boxes,
-    color: 'text-cyan-600',
-    bgColor: 'bg-cyan-50',
-    borderColor: 'border-cyan-300',
-    darkBgColor: 'dark:bg-cyan-950',
-    darkBorderColor: 'dark:border-cyan-700',
+    color: '#0891b2', // cyan-600
     defaultTechStack: ['Kubernetes'],
+    suggestedTech: ['Kubernetes', 'ECS', 'Nomad'],
     category: 'Compute',
   },
 
@@ -171,45 +151,33 @@ export const NODE_REGISTRY: Record<SystemNodeType, NodeTypeConfig> = {
   database: {
     label: 'Database',
     icon: Database,
-    color: 'text-green-600',
-    bgColor: 'bg-green-50',
-    borderColor: 'border-green-300',
-    darkBgColor: 'dark:bg-green-950',
-    darkBorderColor: 'dark:border-green-700',
+    color: '#16a34a', // green-600
     defaultTechStack: ['PostgreSQL'],
+    suggestedTech: ['PostgreSQL', 'MySQL', 'MongoDB', 'DynamoDB'],
     category: 'Data',
   },
   cache: {
     label: 'Cache',
     icon: Zap,
-    color: 'text-amber-600',
-    bgColor: 'bg-amber-50',
-    borderColor: 'border-amber-300',
-    darkBgColor: 'dark:bg-amber-950',
-    darkBorderColor: 'dark:border-amber-700',
+    color: '#d97706', // amber-600
     defaultTechStack: ['Redis'],
+    suggestedTech: ['Redis', 'Memcached', 'Valkey'],
     category: 'Data',
   },
   'object-storage': {
     label: 'Object Storage',
     icon: HardDrive,
-    color: 'text-emerald-600',
-    bgColor: 'bg-emerald-50',
-    borderColor: 'border-emerald-300',
-    darkBgColor: 'dark:bg-emerald-950',
-    darkBorderColor: 'dark:border-emerald-700',
+    color: '#059669', // emerald-600
     defaultTechStack: ['S3'],
+    suggestedTech: ['S3', 'GCS', 'R2'],
     category: 'Data',
   },
   'search-index': {
     label: 'Search Index',
     icon: Search,
-    color: 'text-yellow-600',
-    bgColor: 'bg-yellow-50',
-    borderColor: 'border-yellow-300',
-    darkBgColor: 'dark:bg-yellow-950',
-    darkBorderColor: 'dark:border-yellow-700',
+    color: '#ca8a04', // yellow-600
     defaultTechStack: ['Elasticsearch'],
+    suggestedTech: ['Elasticsearch', 'OpenSearch', 'Meilisearch'],
     category: 'Data',
   },
 
@@ -217,34 +185,25 @@ export const NODE_REGISTRY: Record<SystemNodeType, NodeTypeConfig> = {
   queue: {
     label: 'Message Queue',
     icon: MessageSquare,
-    color: 'text-pink-600',
-    bgColor: 'bg-pink-50',
-    borderColor: 'border-pink-300',
-    darkBgColor: 'dark:bg-pink-950',
-    darkBorderColor: 'dark:border-pink-700',
+    color: '#db2777', // pink-600
     defaultTechStack: ['RabbitMQ'],
+    suggestedTech: ['RabbitMQ', 'SQS', 'DLQ'],
     category: 'Async',
   },
   stream: {
     label: 'Stream',
     icon: Radio,
-    color: 'text-rose-600',
-    bgColor: 'bg-rose-50',
-    borderColor: 'border-rose-300',
-    darkBgColor: 'dark:bg-rose-950',
-    darkBorderColor: 'dark:border-rose-700',
+    color: '#e11d48', // rose-600
     defaultTechStack: ['Kafka'],
+    suggestedTech: ['Kafka', 'Kinesis', 'Redpanda'],
     category: 'Async',
   },
   scheduler: {
     label: 'Scheduler',
     icon: Clock,
-    color: 'text-stone-600',
-    bgColor: 'bg-stone-50',
-    borderColor: 'border-stone-300',
-    darkBgColor: 'dark:bg-stone-950',
-    darkBorderColor: 'dark:border-stone-700',
+    color: '#57534e', // stone-600
     defaultTechStack: [],
+    suggestedTech: ['Cron', 'EventBridge', 'Temporal'],
     category: 'Async',
   },
 
@@ -252,36 +211,27 @@ export const NODE_REGISTRY: Record<SystemNodeType, NodeTypeConfig> = {
   logging: {
     label: 'Logging',
     icon: ScrollText,
-    color: 'text-lime-600',
-    bgColor: 'bg-lime-50',
-    borderColor: 'border-lime-300',
-    darkBgColor: 'dark:bg-lime-950',
-    darkBorderColor: 'dark:border-lime-700',
+    color: '#65a30d', // lime-600
     defaultTechStack: ['ELK Stack'],
+    suggestedTech: ['ELK Stack', 'CloudWatch', 'Loki'],
     category: 'Observability',
   },
   monitoring: {
     label: 'Monitoring',
     icon: Activity,
-    color: 'text-fuchsia-600',
-    bgColor: 'bg-fuchsia-50',
-    borderColor: 'border-fuchsia-300',
-    darkBgColor: 'dark:bg-fuchsia-950',
-    darkBorderColor: 'dark:border-fuchsia-700',
+    color: '#c026d3', // fuchsia-600
     defaultTechStack: ['Prometheus'],
+    suggestedTech: ['Prometheus', 'Grafana', 'Datadog'],
     category: 'Observability',
   },
 
   // Other
   group: {
     label: 'Group',
-    icon: BoxSelect,
-    color: 'text-slate-500',
-    bgColor: 'bg-slate-50/50',
-    borderColor: 'border-slate-300',
-    darkBgColor: 'dark:bg-slate-900/30',
-    darkBorderColor: 'dark:border-slate-600',
+    icon: SquareDashed,
+    color: '#64748b', // slate-500
     defaultTechStack: [],
+    suggestedTech: [],
     category: 'Other',
   },
 };

@@ -1,212 +1,191 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
 import { useReactFlow } from '@xyflow/react';
+import {
+  AlignHorizontalJustifyCenter,
+  BringToFront,
+  ClipboardPaste,
+  Copy,
+  Lock,
+  LockOpen,
+  Maximize,
+  MousePointerSquareDashed,
+  Pencil,
+  Plus,
+  Sparkles,
+  SquareDashed,
+  StickyNote,
+  Trash2,
+} from 'lucide-react';
 import { useCanvasStore } from '@/stores/useCanvasStore';
-import { NODE_REGISTRY, getNodesByCategory } from '@/components/nodes/node-registry';
-import type { SystemNodeType, SystemNodeData } from '@/types';
-import { Copy, Trash2, ClipboardPaste, Plus, Pencil } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { createNoteNode, createSystemNode } from '@/lib/node-factory';
+import type { SystemNodeType } from '@/types';
+import { AddComponentSubmenus } from './AddComponentMenu';
+import { getFitViewOptions, shortcutLabel } from './canvas-helpers';
 
 export interface ContextMenuState {
+  /** Client coordinates of the right-click. */
   x: number;
   y: number;
   nodeId?: string;
-  selectedCount?: number;
 }
 
-interface CanvasContextMenuProps {
-  menu: ContextMenuState;
-  onClose: () => void;
-  hasClipboard: boolean;
-  onCopy: () => void;
-  onPaste: () => void;
-  onDeleteSelection: () => void;
-}
+const DANGER_SHORTCUT = 'text-danger opacity-70';
 
-const categories = getNodesByCategory();
-
-export function CanvasContextMenu({ menu, onClose, hasClipboard, onCopy, onPaste, onDeleteSelection }: CanvasContextMenuProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  const { screenToFlowPosition } = useReactFlow();
-  const addNode = useCanvasStore((s) => s.addNode);
-  const deleteNode = useCanvasStore((s) => s.deleteNode);
-  const setSelectedNodeId = useCanvasStore((s) => s.setSelectedNodeId);
+export function CanvasContextMenu({ menu, onClose }: { menu: ContextMenuState; onClose: () => void }) {
+  const { screenToFlowPosition, fitView } = useReactFlow();
   const nodes = useCanvasStore((s) => s.nodes);
+  const hasClipboard = useCanvasStore((s) => (s.clipboard?.nodes.length ?? 0) > 0);
 
-  useEffect(() => {
-    const handleClick = (e: PointerEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    };
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('pointerdown', handleClick);
-    document.addEventListener('keydown', handleKey);
-    return () => {
-      document.removeEventListener('pointerdown', handleClick);
-      document.removeEventListener('keydown', handleKey);
-    };
-  }, [onClose]);
+  const store = () => useCanvasStore.getState();
+  const node = menu.nodeId ? nodes.find((n) => n.id === menu.nodeId) : undefined;
+  const selected = nodes.filter((n) => n.selected);
+  const isMulti = !!node?.selected && selected.length > 1;
+  const selectedIds = selected.map((n) => n.id);
 
-  const handleAddNode = (nodeType: SystemNodeType) => {
-    const position = screenToFlowPosition({ x: menu.x, y: menu.y });
-    const config = NODE_REGISTRY[nodeType];
-    const isGroup = nodeType === 'group';
-    const data: SystemNodeData = {
-      label: isGroup ? '' : config.label,
-      nodeType,
-      description: '',
-      techStack: [...config.defaultTechStack],
-    };
-    addNode({
-      id: `node-${Date.now()}`,
-      type: isGroup ? 'group' : 'system',
-      position,
-      ...(isGroup ? { style: { width: 300, height: 200 } } : {}),
-      data,
-    });
-    onClose();
+  const addAt = (kind: SystemNodeType | 'note') => {
+    const p = screenToFlowPosition({ x: menu.x, y: menu.y });
+    store().addNode(kind === 'note' ? createNoteNode(p) : createSystemNode(kind, p));
   };
 
-  const handleDelete = () => {
-    if (isMultiSelect) {
-      onDeleteSelection();
-    } else if (menu.nodeId) {
-      deleteNode(menu.nodeId);
-      setSelectedNodeId(null);
-    }
-    onClose();
-  };
-
-  const handleCopy = () => {
-    onCopy();
-    onClose();
-  };
-
-  const handlePaste = () => {
-    onPaste();
-    onClose();
-  };
-
-  const handleEdit = () => {
-    if (menu.nodeId) setSelectedNodeId(menu.nodeId);
-    onClose();
-  };
-
-  const handleDuplicate = () => {
-    if (!menu.nodeId) return;
-    const node = nodes.find((n) => n.id === menu.nodeId);
-    if (!node) return;
-    addNode({
-      id: `node-${Date.now()}`,
-      type: node.type,
-      position: { x: node.position.x + 30, y: node.position.y + 30 },
-      ...(node.type === 'group' ? { style: { width: 300, height: 200 } } : {}),
-      data: { ...node.data },
-    });
-    onClose();
-  };
-
-  const isNodeMenu = !!menu.nodeId;
-  const isMultiSelect = (menu.selectedCount ?? 0) > 1;
-
-  return (
-    <div
-      ref={ref}
-      className="fixed z-50 min-w-[180px] rounded-lg border border-border bg-popover p-1 shadow-lg"
-      style={{ left: menu.x, top: menu.y }}
-    >
-      {isNodeMenu ? (
-        isMultiSelect ? (
-          <>
-            <MenuItem icon={Copy} label={`Copy ${menu.selectedCount} nodes`} onClick={handleCopy} shortcut="Ctrl+C" />
-            <div className="my-1 h-px bg-border" />
-            <MenuItem icon={Trash2} label={`Delete ${menu.selectedCount} nodes`} onClick={handleDelete} shortcut="Del" destructive />
-          </>
-        ) : (
-          <>
-            <MenuItem icon={Pencil} label="Edit" onClick={handleEdit} />
-            <MenuItem icon={Copy} label="Copy" onClick={handleCopy} shortcut="Ctrl+C" />
-            <MenuItem icon={Copy} label="Duplicate" onClick={handleDuplicate} />
-            <div className="my-1 h-px bg-border" />
-            <MenuItem icon={Trash2} label="Delete" onClick={handleDelete} shortcut="Del" destructive />
-          </>
-        )
-      ) : (
+  const renderNodeItems = () => {
+    if (!node) return null;
+    if (isMulti) {
+      const locked = selected.every((n) => n.draggable === false);
+      return (
         <>
-          {hasClipboard && (
-            <>
-              <MenuItem icon={ClipboardPaste} label="Paste" onClick={handlePaste} shortcut="Ctrl+V" />
-              <div className="my-1 h-px bg-border" />
-            </>
-          )}
-          <AddNodeSubMenu onAdd={handleAddNode} />
+          <DropdownMenuItem onSelect={() => store().duplicateNodes(selectedIds)}>
+            <Copy />
+            Duplicate {selected.length}
+            <DropdownMenuShortcut>{shortcutLabel('duplicate')}</DropdownMenuShortcut>
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => store().groupSelection()}>
+            <SquareDashed />
+            Group
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => store().alignSelection()}>
+            <AlignHorizontalJustifyCenter />
+            Align
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => store().toggleLock(selectedIds)}>
+            {locked ? <LockOpen /> : <Lock />}
+            {locked ? 'Unlock' : 'Lock'}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem variant="destructive" onSelect={() => store().deleteSelection()}>
+            <Trash2 />
+            Delete {selected.length}
+            <DropdownMenuShortcut className={DANGER_SHORTCUT}>{shortcutLabel('delete')}</DropdownMenuShortcut>
+          </DropdownMenuItem>
         </>
-      )}
-    </div>
-  );
-}
+      );
+    }
 
-function MenuItem({
-  icon: Icon,
-  label,
-  onClick,
-  shortcut,
-  destructive,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  onClick: () => void;
-  shortcut?: string;
-  destructive?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors ${
-        destructive
-          ? 'text-destructive hover:bg-destructive/10'
-          : 'text-popover-foreground hover:bg-accent'
-      }`}
-    >
-      <Icon className="h-4 w-4" />
-      <span className="flex-1 text-left">{label}</span>
-      {shortcut && <span className="text-xs text-muted-foreground">{shortcut}</span>}
-    </button>
-  );
-}
+    const isComponent = node.type === 'system';
+    const locked = node.draggable === false;
+    return (
+      <>
+        {isComponent && (
+          <DropdownMenuItem onSelect={() => store().setSelectedNodeId(node.id)}>
+            <Pencil />
+            Edit
+            <DropdownMenuShortcut>⏎</DropdownMenuShortcut>
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem onSelect={() => store().duplicateNodes([node.id])}>
+          <Copy />
+          Duplicate
+          <DropdownMenuShortcut>{shortcutLabel('duplicate')}</DropdownMenuShortcut>
+        </DropdownMenuItem>
+        {isComponent && (
+          <DropdownMenuItem disabled className="h-auto py-1.5">
+            <Sparkles className="text-accent" />
+            <span className="grid leading-[1.25]">
+              <span>Suggest next…</span>
+              <span className="text-[11.5px] text-ink-3">Coming soon</span>
+            </span>
+            <span className="ml-auto rounded-full bg-accent-soft px-1.5 text-[10.5px] font-medium text-accent">AI</span>
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => store().bringToFront(node.id)}>
+          <BringToFront />
+          Bring to front
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => store().toggleLock([node.id])}>
+          {locked ? <LockOpen /> : <Lock />}
+          {locked ? 'Unlock position' : 'Lock position'}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem variant="destructive" onSelect={() => store().deleteNode(node.id)}>
+          <Trash2 />
+          Delete
+          <DropdownMenuShortcut className={DANGER_SHORTCUT}>{shortcutLabel('delete')}</DropdownMenuShortcut>
+        </DropdownMenuItem>
+      </>
+    );
+  };
 
-function AddNodeSubMenu({ onAdd }: { onAdd: (type: SystemNodeType) => void }) {
-  return (
+  const renderPaneItems = () => (
     <>
-      <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
-        <div className="flex items-center gap-1">
-          <Plus className="h-3 w-3" />
-          Add Node
-        </div>
-      </div>
-      {categories.map(({ category, types }) => (
-        <div key={category}>
-          <div className="px-2 pt-1.5 pb-0.5 text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wider">
-            {category}
-          </div>
-          <div className="grid grid-cols-2 gap-0.5 px-0.5">
-            {types.map(({ type, config }) => {
-              const Icon = config.icon;
-              return (
-                <button
-                  key={type}
-                  onClick={() => onAdd(type)}
-                  className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-xs text-popover-foreground transition-colors hover:bg-accent"
-                >
-                  <Icon className={`h-3 w-3 shrink-0 ${config.color}`} />
-                  <span className="truncate">{config.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ))}
+      <DropdownMenuSub>
+        <DropdownMenuSubTrigger>
+          <Plus />
+          Add component
+        </DropdownMenuSubTrigger>
+        <DropdownMenuSubContent className="w-[200px]">
+          <AddComponentSubmenus onAdd={addAt} />
+        </DropdownMenuSubContent>
+      </DropdownMenuSub>
+      <DropdownMenuItem onSelect={() => addAt('note')}>
+        <StickyNote />
+        Add note
+      </DropdownMenuItem>
+      <DropdownMenuItem disabled={!hasClipboard} onSelect={() => store().pasteSelection()}>
+        <ClipboardPaste />
+        Paste
+        <DropdownMenuShortcut>{shortcutLabel('paste')}</DropdownMenuShortcut>
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem disabled={nodes.length === 0} onSelect={() => store().selectAll()}>
+        <MousePointerSquareDashed />
+        Select all
+        <DropdownMenuShortcut>{shortcutLabel('select-all')}</DropdownMenuShortcut>
+      </DropdownMenuItem>
+      <DropdownMenuItem onSelect={() => fitView(getFitViewOptions(200))}>
+        <Maximize />
+        Fit view
+        <DropdownMenuShortcut>{shortcutLabel('fit-view')}</DropdownMenuShortcut>
+      </DropdownMenuItem>
     </>
+  );
+
+  return (
+    <DropdownMenu open modal={false} onOpenChange={(open) => !open && onClose()}>
+      <DropdownMenuTrigger asChild>
+        <span aria-hidden className="pointer-events-none fixed size-0" style={{ left: menu.x, top: menu.y }} />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        side="bottom"
+        align="start"
+        sideOffset={2}
+        collisionPadding={8}
+        className="w-[200px]"
+        onCloseAutoFocus={(e) => e.preventDefault()}
+      >
+        {node ? renderNodeItems() : renderPaneItems()}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

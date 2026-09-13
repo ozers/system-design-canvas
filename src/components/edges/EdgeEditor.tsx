@@ -1,190 +1,184 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Activity, ArrowLeftRight, Clock, FileJson, Trash2 } from 'lucide-react';
 import { useCanvasStore } from '@/stores/useCanvasStore';
+import { useIsNarrow } from '@/hooks/useMediaQuery';
 import { EDGE_REGISTRY } from './edge-registry';
-import { SYSTEM_EDGE_TYPES, type SystemEdgeType } from '@/types';
+import { ProtocolSwatch } from './ProtocolPicker';
+import { SYSTEM_EDGE_TYPES, type SystemEdgeData } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Input, Textarea } from '@/components/ui/input';
+import { Field } from '@/components/ui/label';
+import { Kbd } from '@/components/ui/kbd';
+import { Panel, PanelBody, PanelFooter, PanelHeader } from '@/components/ui/panel';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
-import { X, Trash2, Clock, FileJson, Activity } from 'lucide-react';
+import { cn, tint } from '@/lib/utils';
 
-function EdgeEditorContent() {
-  const selectedEdgeId = useCanvasStore((s) => s.selectedEdgeId);
-  const edges = useCanvasStore((s) => s.edges);
+const DETAILS = [
+  { key: 'latency', label: 'Latency', icon: Clock, placeholder: 'e.g. ~50ms' },
+  { key: 'dataFormat', label: 'Format', icon: FileJson, placeholder: 'e.g. Protobuf' },
+  { key: 'throughput', label: 'Throughput', icon: Activity, placeholder: 'e.g. 1K req/s' },
+] as const satisfies readonly { key: keyof SystemEdgeData; label: string; icon: unknown; placeholder: string }[];
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <span className="text-[12px] leading-4 font-medium text-ink-2">{children}</span>;
+}
+
+function EdgeEditorContent({ edgeId, onClose }: { edgeId: string; onClose: () => void }) {
+  const edge = useCanvasStore((s) => s.edges.find((e) => e.id === edgeId));
+  const sourceLabel = useCanvasStore((s) => s.nodes.find((n) => n.id === edge?.source)?.data.label);
+  const targetLabel = useCanvasStore((s) => s.nodes.find((n) => n.id === edge?.target)?.data.label);
   const updateEdgeData = useCanvasStore((s) => s.updateEdgeData);
   const deleteEdge = useCanvasStore((s) => s.deleteEdge);
-  const setSelectedEdgeId = useCanvasStore((s) => s.setSelectedEdgeId);
+  const reverseEdge = useCanvasStore((s) => s.reverseEdge);
 
-  const edge = edges.find((e) => e.id === selectedEdgeId);
+  if (!edge) return null;
 
-  if (!edge || !selectedEdgeId || !edge.data) return null;
-
-  const config = EDGE_REGISTRY[edge.data.edgeType];
-
-  const handleTypeChange = (edgeType: SystemEdgeType) => {
-    updateEdgeData(selectedEdgeId, { edgeType });
-  };
-
-  const handleDelete = () => {
-    deleteEdge(selectedEdgeId);
-    setSelectedEdgeId(null);
-  };
+  const data: SystemEdgeData = edge.data ?? { edgeType: 'rest' };
+  const config = EDGE_REGISTRY[data.edgeType] ?? EDGE_REGISTRY.rest;
+  const update = (patch: Partial<SystemEdgeData>) => updateEdgeData(edgeId, patch);
 
   return (
     <>
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
-        <div className="flex items-center gap-2">
+      <PanelHeader
+        icon={
           <span
-            className="h-3 w-3 rounded-full"
-            style={{ backgroundColor: config.color }}
-          />
-          <span className="font-medium text-sm">{config.label}</span>
-        </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 md:flex hidden"
-          onClick={() => setSelectedEdgeId(null)}
-          aria-label="Close editor"
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
+            className="inline-flex size-8 shrink-0 items-center justify-center rounded-[9px]"
+            style={{ background: tint(config.color) }}
+          >
+            <span className="h-0.5 w-3.5 rounded-full" style={{ background: config.color }} />
+          </span>
+        }
+        title={`${sourceLabel || 'Untitled'} → ${targetLabel || 'Untitled'}`}
+        subtitle={
+          <>
+            Connection · <span className="font-mono">{edgeId}</span>
+          </>
+        }
+        onClose={onClose}
+      />
 
-      <div className="space-y-4 p-4">
-        <div className="space-y-2">
-          <Label>Label</Label>
-          <Input
-            value={edge.data.label ?? ''}
-            onChange={(e) => updateEdgeData(selectedEdgeId, { label: e.target.value })}
-            placeholder="Connection label..."
-          />
-        </div>
+      <PanelBody>
+        <Field label="Label">
+          <Input value={data.label ?? ''} placeholder="e.g. HTTPS" onChange={(e) => update({ label: e.target.value })} />
+        </Field>
 
-        <div className="space-y-2">
-          <Label>Connection Type</Label>
-          <div className="grid grid-cols-2 gap-1">
+        <div className="grid gap-1.5">
+          <SectionLabel>Protocol</SectionLabel>
+          <div role="radiogroup" aria-label="Protocol" className="grid grid-cols-2 gap-1">
             {SYSTEM_EDGE_TYPES.map((type) => {
-              const c = EDGE_REGISTRY[type];
+              const checked = type === data.edgeType;
               return (
                 <button
                   key={type}
-                  onClick={() => handleTypeChange(type)}
-                  className={`flex items-center gap-1.5 rounded px-2 py-1.5 text-xs transition-colors ${
-                    edge.data!.edgeType === type
-                      ? 'bg-muted font-medium ring-1 ring-border'
-                      : 'hover:bg-accent'
-                  }`}
+                  type="button"
+                  role="radio"
+                  aria-checked={checked}
+                  onClick={() => !checked && update({ edgeType: type })}
+                  className={cn(
+                    'flex h-8 items-center gap-2 rounded-[9px] border px-2.5 text-left text-[12.5px] whitespace-nowrap text-ink transition-colors duration-[120ms] outline-none focus-visible:border-accent focus-visible:shadow-[0_0_0_3px_var(--accent-soft)]',
+                    checked ? 'border-accent bg-accent-soft font-semibold' : 'border-line bg-paper hover:border-ink-3'
+                  )}
                 >
-                  <span
-                    className="h-2 w-2 rounded-full shrink-0"
-                    style={{ backgroundColor: c.color }}
-                  />
-                  {c.label}
+                  <ProtocolSwatch type={type} width={14} />
+                  <span className="truncate">{EDGE_REGISTRY[type].label}</span>
                 </button>
               );
             })}
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label>Description</Label>
-          <textarea
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
-            rows={3}
-            value={edge.data.description ?? ''}
-            onChange={(e) => updateEdgeData(selectedEdgeId, { description: e.target.value })}
+        <Field label="Description">
+          <Textarea
+            rows={2}
+            value={data.description ?? ''}
             placeholder="What does this connection do?"
+            onChange={(e) => update({ description: e.target.value })}
           />
-        </div>
+        </Field>
 
-        <div className="space-y-3">
-          <Label className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider">Connection Details</Label>
-
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <Label className="text-xs shrink-0 w-16">Latency</Label>
-              <Input
-                value={edge.data.latency ?? ''}
-                onChange={(e) => updateEdgeData(selectedEdgeId, { latency: e.target.value })}
-                placeholder="e.g. <100ms, ~50ms"
-                className="h-7 text-xs"
-              />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <FileJson className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <Label className="text-xs shrink-0 w-16">Format</Label>
-              <Input
-                value={edge.data.dataFormat ?? ''}
-                onChange={(e) => updateEdgeData(selectedEdgeId, { dataFormat: e.target.value })}
-                placeholder="e.g. JSON, Protobuf, XML"
-                className="h-7 text-xs"
-              />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Activity className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <Label className="text-xs shrink-0 w-16">Throughput</Label>
-              <Input
-                value={edge.data.throughput ?? ''}
-                onChange={(e) => updateEdgeData(selectedEdgeId, { throughput: e.target.value })}
-                placeholder="e.g. 1K req/s, 10MB/s"
-                className="h-7 text-xs"
-              />
-            </div>
+        <div className="grid gap-2">
+          <SectionLabel>Details</SectionLabel>
+          <div className="overflow-hidden rounded-[9px] border border-line">
+            {DETAILS.map(({ key, label, icon: Icon, placeholder }, i) => (
+              <label
+                key={key}
+                className={cn('grid h-9 grid-cols-[112px_1fr] items-center', i > 0 && 'border-t border-line-2')}
+              >
+                <span className="inline-flex items-center gap-[7px] pl-2.5 text-[12px] text-ink-2">
+                  <Icon className="size-[13px] text-ink-3" />
+                  {label}
+                </span>
+                <input
+                  value={data[key] ?? ''}
+                  placeholder={placeholder}
+                  onChange={(e) => update({ [key]: e.target.value })}
+                  className="h-full min-w-0 border-0 border-l border-line-2 bg-transparent px-2.5 font-mono text-[12px] text-ink transition-colors duration-[120ms] outline-none placeholder:text-ink-3 focus:bg-line-2"
+                />
+              </label>
+            ))}
           </div>
         </div>
 
-        <div className="border-t border-border pt-4">
-          <Button variant="destructive" size="sm" className="w-full" onClick={handleDelete}>
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete Connection
-          </Button>
-        </div>
-      </div>
+        <button
+          type="button"
+          onClick={() => reverseEdge(edgeId)}
+          className="flex w-full items-center gap-2 rounded-[9px] bg-line-2 px-3 py-2.5 text-left text-[12px] text-ink-2 transition-colors duration-[120ms] outline-none hover:text-ink focus-visible:shadow-[0_0_0_3px_var(--accent-soft)]"
+        >
+          <ArrowLeftRight className="size-3.5 text-ink-3" />
+          <span className="flex-1">Reverse direction</span>
+          <Kbd bare>⇧R</Kbd>
+        </button>
+      </PanelBody>
+
+      <PanelFooter>
+        <span className="text-[11.5px] text-ink-3">Shown on the edge as a pill label</span>
+        <Button variant="danger" size="sm" className="ml-auto" onClick={() => deleteEdge(edgeId)}>
+          <Trash2 />
+          Delete
+        </Button>
+      </PanelFooter>
     </>
   );
 }
 
+/** Editor for the selected connection. Floating panel on desktop, right drawer on narrow screens. */
 export function EdgeEditor() {
   const selectedEdgeId = useCanvasStore((s) => s.selectedEdgeId);
-  const edges = useCanvasStore((s) => s.edges);
+  const isOpen = useCanvasStore(
+    (s) => !s.presentation.active && !!s.selectedEdgeId && s.edges.some((e) => e.id === s.selectedEdgeId)
+  );
   const setSelectedEdgeId = useCanvasStore((s) => s.setSelectedEdgeId);
-  const [isMobile, setIsMobile] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.matchMedia('(max-width: 767px)').matches;
-  });
+  const isNarrow = useIsNarrow();
 
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 767px)');
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
+  if (!isOpen || !selectedEdgeId) return null;
 
-  const edge = edges.find((e) => e.id === selectedEdgeId);
-  const isOpen = !!edge && !!selectedEdgeId;
+  const close = () => setSelectedEdgeId(null);
 
-  if (!isOpen) return null;
-
-  if (isMobile) {
+  if (isNarrow) {
     return (
-      <Sheet open={isOpen} onOpenChange={(open) => { if (!open) setSelectedEdgeId(null); }}>
-        <SheetContent side="right" showCloseButton>
-          <SheetTitle className="sr-only">Edit Connection</SheetTitle>
-          <EdgeEditorContent />
+      <Sheet open onOpenChange={(open) => !open && close()}>
+        <SheetContent side="right" aria-describedby={undefined}>
+          <SheetTitle className="sr-only">Edit connection</SheetTitle>
+          <EdgeEditorContent key={selectedEdgeId} edgeId={selectedEdgeId} onClose={close} />
         </SheetContent>
       </Sheet>
     );
   }
 
   return (
-    <div className="h-full w-80 shrink-0 border-l border-border bg-card overflow-y-auto">
-      <EdgeEditorContent />
-    </div>
+    <Panel
+      role="dialog"
+      aria-label="Edit connection"
+      className="animate-panel-in-right absolute top-4 right-4 bottom-4 z-20 flex w-[300px] flex-col overflow-hidden"
+      onKeyDown={(e) => {
+        if (e.key === 'Escape' && !e.defaultPrevented) {
+          e.stopPropagation();
+          close();
+        }
+      }}
+    >
+      <EdgeEditorContent key={selectedEdgeId} edgeId={selectedEdgeId} onClose={close} />
+    </Panel>
   );
 }

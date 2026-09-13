@@ -1,114 +1,100 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent as ReactMouseEvent } from 'react';
 import {
   ReactFlow,
+  ReactFlowProvider,
   Background,
   BackgroundVariant,
   ConnectionMode,
-  Controls,
   MiniMap,
   SelectionMode,
   reconnectEdge,
   useReactFlow,
-  type OnNodesChange,
-  type OnEdgesChange,
+  useStore,
   type OnConnect,
+  type OnEdgesChange,
+  type OnNodesChange,
   type OnReconnect,
-  ReactFlowProvider,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
 import { useCanvasStore } from '@/stores/useCanvasStore';
 import { useProjectStore } from '@/stores/useProjectStore';
+import { useSettingsStore } from '@/stores/useSettingsStore';
 import { BaseSystemNode } from '@/components/nodes/BaseSystemNode';
 import { GroupNode } from '@/components/nodes/GroupNode';
 import { StickyNote } from '@/components/nodes/StickyNote';
-import { SystemEdge } from '@/components/edges/SystemEdge';
-import { ConnectionTypePicker } from '@/components/edges/ConnectionTypePicker';
-import { CanvasToolbar } from './CanvasToolbar';
-import { NodePalette } from './NodePalette';
 import { NodeEditor } from '@/components/nodes/NodeEditor';
+import { NODE_REGISTRY } from '@/components/nodes/node-registry';
+import { SystemEdge } from '@/components/edges/SystemEdge';
 import { EdgeEditor } from '@/components/edges/EdgeEditor';
-import { Header } from '@/components/layout/Header';
+import { ConnectionTypePicker } from '@/components/edges/ConnectionTypePicker';
+import { CanvasHeader } from '@/components/layout/CanvasHeader';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
-import { useTheme } from '@/hooks/useTheme';
-import { OnboardingOverlay } from './OnboardingOverlay';
-import { SearchDialog } from './SearchDialog';
+import { useIsNarrow } from '@/hooks/useMediaQuery';
+import { createSystemNode } from '@/lib/node-factory';
+import { getMinimapColor } from '@/lib/minimap';
+import { computeIssues, ValidationWarningsContext } from '@/lib/validation';
+import { cn } from '@/lib/utils';
+import type { SystemNode, SystemEdge as SystemEdgeModel, SystemNodeType } from '@/types';
+import { CanvasToolbar } from './CanvasToolbar';
+import { NodePalette } from './NodePalette';
 import { ValidationPanel } from './ValidationPanel';
+import { SelectionActions } from './SelectionActions';
+import { EmptyCanvas } from './EmptyCanvas';
+import { PresentationOverlay } from './PresentationOverlay';
 import { CanvasContextMenu, type ContextMenuState } from './CanvasContextMenu';
-import { NODE_REGISTRY } from '@/components/nodes/node-registry';
-import type { SystemNode, SystemEdge as SystemEdgeType, SystemNodeType, SystemNodeData } from '@/types';
-
-const MINIMAP_NODE_COLORS: Record<string, string> = {
-  service: '#93bbfd',
-  database: '#86e0a5',
-  cache: '#fcd68d',
-  queue: '#f9a8d4',
-  'load-balancer': '#a5b4fc',
-  client: '#c4b5fd',
-  cdn: '#7dd3c4',
-  'api-gateway': '#fca5a5',
-  group: '#94a3b8',
-  note: '#fcd68d',
-  dns: '#7dd3fc',
-  waf: '#fdba74',
-  worker: '#94a3b8',
-  serverless: '#c4b5fd',
-  'container-cluster': '#67e8f9',
-  'object-storage': '#6ee7b7',
-  'search-index': '#fde047',
-  stream: '#fda4af',
-  scheduler: '#a8a29e',
-  logging: '#bef264',
-  monitoring: '#f0abfc',
-};
-
-function getMinimapNodeColor(node: SystemNode): string {
-  if (node.type === 'note') return MINIMAP_NODE_COLORS.note;
-  if (node.type === 'group') return MINIMAP_NODE_COLORS.group;
-  const nodeType = (node.data as SystemNodeData)?.nodeType;
-  return MINIMAP_NODE_COLORS[nodeType] ?? '#94a3b8';
-}
+import { CommandMenu } from './CommandMenu';
+import { ShortcutsDialog } from './ShortcutsDialog';
+import { OnboardingOverlay } from './OnboardingOverlay';
+import { ShareDialog } from './ShareDialog';
+import { ExportDialog } from './ExportDialog';
+import { getFitViewOptions, presentationOrder } from './canvas-helpers';
 
 const nodeTypes = { system: BaseSystemNode, group: GroupNode, note: StickyNote };
 const edgeTypes = { system: SystemEdge };
+const DELETE_KEYS = ['Backspace', 'Delete'];
+const LIBRARY_WIDTH = 260 + 16;
+
+/** Dot grid: gap scales with zoom, dots stay ~1px like the Studio canvas ground. */
+function DotGrid() {
+  const zoom = useStore((s) => s.transform[2]);
+  return <Background variant={BackgroundVariant.Dots} gap={20} size={2 / zoom} color="var(--dots)" />;
+}
 
 function CanvasInner({ projectId }: { projectId: string }) {
   const nodes = useCanvasStore((s) => s.nodes);
   const edges = useCanvasStore((s) => s.edges);
   const viewport = useCanvasStore((s) => s.viewport);
   const onNodesChange = useCanvasStore((s) => s.onNodesChange) as OnNodesChange<SystemNode>;
-  const onEdgesChange = useCanvasStore((s) => s.onEdgesChange) as OnEdgesChange<SystemEdgeType>;
+  const onEdgesChange = useCanvasStore((s) => s.onEdgesChange) as OnEdgesChange<SystemEdgeModel>;
   const onConnect = useCanvasStore((s) => s.onConnect) as OnConnect;
   const setViewport = useCanvasStore((s) => s.setViewport);
   const setSelectedNodeId = useCanvasStore((s) => s.setSelectedNodeId);
+  const setSelectedEdgeId = useCanvasStore((s) => s.setSelectedEdgeId);
+  const selectedNodeId = useCanvasStore((s) => s.selectedNodeId);
+  const selectedEdgeId = useCanvasStore((s) => s.selectedEdgeId);
   const initCanvas = useCanvasStore((s) => s.initCanvas);
-  const snapToGrid = useCanvasStore((s) => s.snapToGrid);
-  const backgroundVariant = useCanvasStore((s) => s.backgroundVariant);
-  const presentationMode = useCanvasStore((s) => s.presentationMode);
-  const { theme } = useTheme();
-
-  const bgColor = useMemo(() => {
-    const isDark = theme === 'dark';
-    switch (backgroundVariant) {
-      case 'dots':
-        return isDark ? '#323844' : '#c8ccd4';
-      case 'lines':
-      case 'cross':
-        return isDark ? '#2a2e38' : '#e0e2e8';
-      default:
-        return undefined;
-    }
-  }, [theme, backgroundVariant]);
-  const togglePresentationMode = useCanvasStore((s) => s.togglePresentationMode);
   const addNode = useCanvasStore((s) => s.addNode);
   const deleteNode = useCanvasStore((s) => s.deleteNode);
   const deleteEdge = useCanvasStore((s) => s.deleteEdge);
   const pushHistory = useCanvasStore((s) => s.pushHistory);
   const setPendingEdge = useCanvasStore((s) => s.setPendingEdge);
   const setEdges = useCanvasStore((s) => s.setEdges);
+  const presentation = useCanvasStore((s) => s.presentation);
+  const setPresentationIndex = useCanvasStore((s) => s.setPresentationIndex);
+  const libraryCollapsed = useCanvasStore((s) => s.libraryCollapsed);
+  const setLibraryCollapsed = useCanvasStore((s) => s.setLibraryCollapsed);
+
+  const snap = useSettingsStore((s) => s.snap);
+  const showMinimapSetting = useSettingsStore((s) => s.minimap);
+  const validationEnabled = useSettingsStore((s) => s.validation);
+  const animatedEdges = useSettingsStore((s) => s.animatedEdges);
+
+  const narrow = useIsNarrow();
+  const presenting = presentation.active;
 
   const connectEndPos = useRef<{ x: number; y: number } | null>(null);
   const edgeReconnectSuccessful = useRef(true);
@@ -117,16 +103,12 @@ function CanvasInner({ projectId }: { projectId: string }) {
   useAutoSave();
   useKeyboardShortcuts();
 
-  // Context menu
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
-  const clipboard = useCanvasStore((s) => s.clipboard);
-  const copySelection = useCanvasStore((s) => s.copySelection);
-  const pasteSelection = useCanvasStore((s) => s.pasteSelection);
-  const deleteSelection = useCanvasStore((s) => s.deleteSelection);
 
   const projects = useProjectStore((s) => s.projects);
   const loadProjects = useProjectStore((s) => s.loadProjects);
   const loaded = useProjectStore((s) => s.loaded);
+  const currentProject = projects.find((p) => p.id === projectId);
 
   useEffect(() => {
     if (!loaded) loadProjects();
@@ -134,32 +116,85 @@ function CanvasInner({ projectId }: { projectId: string }) {
 
   useEffect(() => {
     if (!loaded) return;
-    const project = projects.find((p) => p.id === projectId);
-    if (project) {
-      initCanvas(
-        projectId,
-        project.nodes as SystemNode[],
-        project.edges as SystemEdgeType[],
-        project.viewport
-      );
-      // Center the view on nodes after React Flow renders them
-      requestAnimationFrame(() => {
-        fitView({ padding: 0.15, duration: 200 });
-      });
+    const project = useProjectStore.getState().projects.find((p) => p.id === projectId);
+    if (!project) return;
+    initCanvas(projectId, project.nodes as SystemNode[], project.edges as SystemEdgeModel[], project.viewport);
+    requestAnimationFrame(() => {
+      fitView(getFitViewOptions(200));
+    });
+  }, [projectId, loaded, initCanvas, fitView]);
+
+  // Library starts collapsed (i.e. the bottom sheet closed) on narrow screens.
+  useEffect(() => {
+    if (narrow) setLibraryCollapsed(true);
+  }, [narrow, setLibraryCollapsed]);
+
+  // ── Derived chrome state ───────────────────────────────
+  const selectedCount = useMemo(() => nodes.reduce((n, node) => n + (node.selected ? 1 : 0), 0), [nodes]);
+  const selectedNode = selectedNodeId ? nodes.find((n) => n.id === selectedNodeId) : undefined;
+  const nodeEditorOpen = selectedNode?.type === 'system' && selectedCount < 2;
+  const edgeEditorOpen = !!selectedEdgeId && edges.some((e) => e.id === selectedEdgeId);
+  const editorOpen = !presenting && (nodeEditorOpen || edgeEditorOpen);
+
+  const issues = useMemo(() => computeIssues(nodes, edges), [nodes, edges]);
+  const validationActive = validationEnabled && !presenting;
+  // Stable identity while the set of warned nodes is unchanged, so nodes don't re-render on every drag frame.
+  const warningKey = validationActive
+    ? issues
+        .filter((i) => i.severity === 'warning')
+        .map((i) => i.nodeId)
+        .join('|')
+    : '';
+  const warningNodeIds = useMemo<ReadonlySet<string>>(
+    () => new Set(warningKey ? warningKey.split('|') : []),
+    [warningKey]
+  );
+
+  // ── Presentation ───────────────────────────────────────
+  const presentationStartId = selectedNodeId ?? nodes.find((n) => n.selected)?.id;
+  const order = useMemo(
+    () => (presenting ? presentationOrder(nodes, edges, presentationStartId) : []),
+    [presenting, nodes, edges, presentationStartId]
+  );
+  const currentId = order.length > 0 ? order[Math.min(presentation.index, order.length - 1)].id : undefined;
+
+  const flowNodes = useMemo(() => {
+    if (!presenting) return nodes;
+    const neighbors = new Set<string>();
+    for (const e of edges) {
+      if (e.source === currentId) neighbors.add(e.target);
+      if (e.target === currentId) neighbors.add(e.source);
     }
-  }, [projectId, loaded]); // eslint-disable-line react-hooks/exhaustive-deps
+    return nodes.map((n) => {
+      const opacity = n.id === currentId ? 1 : neighbors.has(n.id) ? 0.7 : 0.25;
+      return { ...n, selected: n.id === currentId, style: { ...n.style, opacity } };
+    });
+  }, [presenting, nodes, edges, currentId]);
 
-  const setSelectedEdgeId = useCanvasStore((s) => s.setSelectedEdgeId);
+  const flowEdges = useMemo(() => {
+    if (!presenting) return edges;
+    return edges.map((e) => {
+      const opacity = e.source === currentId || e.target === currentId ? 1 : 0.2;
+      return { ...e, selected: false, style: { ...e.style, opacity } };
+    });
+  }, [presenting, edges, currentId]);
 
+  // ── Handlers ───────────────────────────────────────────
   const onNodeClick = useCallback(
-    (_: React.MouseEvent, node: SystemNode) => {
+    (_: ReactMouseEvent, node: SystemNode) => {
+      if (useCanvasStore.getState().presentation.active) {
+        const i = order.findIndex((n) => n.id === node.id);
+        if (i >= 0) setPresentationIndex(i);
+        return;
+      }
       setSelectedNodeId(node.id);
     },
-    [setSelectedNodeId]
+    [order, setPresentationIndex, setSelectedNodeId]
   );
 
   const onEdgeClick = useCallback(
-    (_: React.MouseEvent, edge: SystemEdgeType) => {
+    (_: ReactMouseEvent, edge: SystemEdgeModel) => {
+      if (useCanvasStore.getState().presentation.active) return;
       setSelectedEdgeId(edge.id);
     },
     [setSelectedEdgeId]
@@ -171,77 +206,53 @@ function CanvasInner({ projectId }: { projectId: string }) {
     setContextMenu(null);
   }, [setSelectedNodeId, setSelectedEdgeId]);
 
-  const onNodesDelete = useCallback(
-    (deleted: SystemNode[]) => {
-      deleted.forEach((n) => deleteNode(n.id));
-    },
-    [deleteNode]
-  );
-
+  const onNodesDelete = useCallback((deleted: SystemNode[]) => deleted.forEach((n) => deleteNode(n.id)), [deleteNode]);
   const onEdgesDelete = useCallback(
-    (deleted: SystemEdgeType[]) => {
-      deleted.forEach((e) => deleteEdge(e.id));
-    },
+    (deleted: SystemEdgeModel[]) => deleted.forEach((e) => deleteEdge(e.id)),
     [deleteEdge]
   );
 
   const onMoveEnd = useCallback(
-    (_: unknown, vp: { x: number; y: number; zoom: number }) => {
-      setViewport(vp);
-    },
+    (_: unknown, vp: { x: number; y: number; zoom: number }) => setViewport(vp),
     [setViewport]
   );
 
-  const onNodeDragStop = useCallback(() => {
-    pushHistory();
-  }, [pushHistory]);
+  const onNodeDragStop = useCallback(() => pushHistory(), [pushHistory]);
 
-  // Wrap onConnect to show type picker after connection
   const handleConnect: OnConnect = useCallback(
     (connection) => {
       onConnect(connection);
-      // After the edge is created, show type picker at cursor position
-      if (connectEndPos.current) {
-        // Get the newest edge (just created by onConnect)
-        const latestEdges = useCanvasStore.getState().edges;
-        const newEdge = latestEdges[latestEdges.length - 1];
-        if (newEdge) {
-          setPendingEdge({
-            edgeId: newEdge.id,
-            position: connectEndPos.current,
-          });
-        }
-      }
+      if (!connectEndPos.current) return;
+      const latest = useCanvasStore.getState().edges;
+      const newEdge = latest[latest.length - 1];
+      if (newEdge) setPendingEdge({ edgeId: newEdge.id, position: connectEndPos.current });
     },
     [onConnect, setPendingEdge]
   );
 
   const onConnectEnd = useCallback((event: MouseEvent | TouchEvent) => {
-    const pos = 'changedTouches' in event
-      ? { x: event.changedTouches[0].clientX, y: event.changedTouches[0].clientY }
-      : { x: (event as MouseEvent).clientX, y: (event as MouseEvent).clientY };
-    connectEndPos.current = pos;
+    connectEndPos.current =
+      'changedTouches' in event
+        ? { x: event.changedTouches[0].clientX, y: event.changedTouches[0].clientY }
+        : { x: event.clientX, y: event.clientY };
   }, []);
 
-  // Edge reconnect handlers
   const onReconnectStart = useCallback(() => {
     edgeReconnectSuccessful.current = false;
   }, []);
 
-  const onReconnect: OnReconnect = useCallback(
+  const onReconnect: OnReconnect<SystemEdgeModel> = useCallback(
     (oldEdge, newConnection) => {
       edgeReconnectSuccessful.current = true;
       pushHistory();
-      setEdges(reconnectEdge(oldEdge, newConnection, useCanvasStore.getState().edges) as SystemEdgeType[]);
+      setEdges(reconnectEdge(oldEdge, newConnection, useCanvasStore.getState().edges) as SystemEdgeModel[]);
     },
     [pushHistory, setEdges]
   );
 
   const onReconnectEnd = useCallback(
-    (_: MouseEvent | TouchEvent, edge: SystemEdgeType) => {
-      if (!edgeReconnectSuccessful.current) {
-        deleteEdge(edge.id);
-      }
+    (_: MouseEvent | TouchEvent, edge: SystemEdgeModel) => {
+      if (!edgeReconnectSuccessful.current) deleteEdge(edge.id);
     },
     [deleteEdge]
   );
@@ -255,73 +266,40 @@ function CanvasInner({ projectId }: { projectId: string }) {
     (event: DragEvent) => {
       event.preventDefault();
       const nodeType = event.dataTransfer.getData('application/reactflow-nodetype') as SystemNodeType;
-      if (!nodeType) return;
-
-      const position = screenToFlowPosition({
-        x: event.clientX,
-        y: event.clientY,
-      });
-
-      const config = NODE_REGISTRY[nodeType];
+      if (!nodeType || !(nodeType in NODE_REGISTRY)) return;
+      const p = screenToFlowPosition({ x: event.clientX, y: event.clientY });
       const isGroup = nodeType === 'group';
-      const data: SystemNodeData = {
-        label: isGroup ? '' : config.label,
-        nodeType,
-        description: '',
-        techStack: [...config.defaultTechStack],
-      };
-
-      addNode({
-        id: `node-${Date.now()}`,
-        type: isGroup ? 'group' : 'system',
-        position,
-        ...(isGroup ? { style: { width: 300, height: 200 } } : {}),
-        data,
-      });
+      addNode(createSystemNode(nodeType, { x: p.x - (isGroup ? 160 : 100), y: p.y - (isGroup ? 100 : 36) }));
     },
     [screenToFlowPosition, addNode]
   );
 
-  const onPaneContextMenu = useCallback((event: MouseEvent | React.MouseEvent) => {
+  const onPaneContextMenu = useCallback((event: MouseEvent | ReactMouseEvent) => {
     event.preventDefault();
+    if (useCanvasStore.getState().presentation.active) return;
     setContextMenu({ x: event.clientX, y: event.clientY });
   }, []);
 
-  const onNodeContextMenu = useCallback((event: React.MouseEvent, node: SystemNode) => {
+  const onNodeContextMenu = useCallback((event: ReactMouseEvent, node: SystemNode) => {
     event.preventDefault();
-    const selectedCount = useCanvasStore.getState().nodes.filter((n) => n.selected).length;
-    setContextMenu({ x: event.clientX, y: event.clientY, nodeId: node.id, selectedCount });
+    if (useCanvasStore.getState().presentation.active) return;
+    setContextMenu({ x: event.clientX, y: event.clientY, nodeId: node.id });
   }, []);
 
-  const handleCopy = useCallback(() => {
-    copySelection();
-  }, [copySelection]);
+  const closeContextMenu = useCallback(() => setContextMenu(null), []);
 
-  const handlePaste = useCallback(() => {
-    pasteSelection();
-  }, [pasteSelection]);
-
-  const handleDeleteSelection = useCallback(() => {
-    deleteSelection();
-  }, [deleteSelection]);
-
-  const currentProject = projects.find((p) => p.id === projectId);
-  const selectedNodeId = useCanvasStore((s) => s.selectedNodeId);
-  const selectedEdgeId = useCanvasStore((s) => s.selectedEdgeId);
-  const selectedNode = nodes.find((n) => n.id === selectedNodeId);
-  const selectedEdge = edges.find((e) => e.id === selectedEdgeId);
-  const selectedCount = nodes.filter((n) => n.selected).length;
-  const isNodeEditorOpen = !!selectedNode && selectedCount <= 1;
-  const isEdgeEditorOpen = !!selectedEdge;
+  const showMinimap = showMinimapSetting && !narrow && !presenting && !editorOpen;
+  const showValidation = validationActive && !(narrow && editorOpen);
+  const libraryOffset = !narrow && !libraryCollapsed ? LIBRARY_WIDTH : 0;
 
   return (
-    <div className="flex h-screen w-screen flex-col">
-      {!presentationMode && <Header projectName={currentProject?.name} showBack />}
-      <div className="flex flex-1 overflow-hidden">
-        <div className="relative flex-1">
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
+    <div className="flex h-dvh w-screen flex-col bg-bg">
+      {!presenting && <CanvasHeader projectId={projectId} projectName={currentProject?.name} />}
+      <div className={cn('relative flex-1 overflow-hidden', !animatedEdges && 'edges-static')}>
+        <ValidationWarningsContext.Provider value={warningNodeIds}>
+          <ReactFlow<SystemNode, SystemEdgeModel>
+            nodes={flowNodes}
+            edges={flowEdges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={handleConnect}
@@ -345,62 +323,61 @@ function CanvasInner({ projectId }: { projectId: string }) {
             defaultViewport={viewport}
             defaultEdgeOptions={{ type: 'system' }}
             fitView
-            fitViewOptions={{ padding: 0.15 }}
+            fitViewOptions={getFitViewOptions()}
             connectionMode={ConnectionMode.Loose}
             selectionMode={SelectionMode.Partial}
-            snapToGrid={snapToGrid}
+            snapToGrid={snap}
             snapGrid={[20, 20]}
-            deleteKeyCode={['Backspace', 'Delete']}
-            className="bg-background"
+            nodesDraggable={!presenting}
+            nodesConnectable={!presenting}
+            elementsSelectable={!presenting}
+            edgesReconnectable={!presenting}
+            deleteKeyCode={presenting ? null : DELETE_KEYS}
+            className="bg-bg"
           >
-            {backgroundVariant !== 'none' && (
-              <Background
-                variant={
-                  backgroundVariant === 'dots' ? BackgroundVariant.Dots :
-                  backgroundVariant === 'lines' ? BackgroundVariant.Lines :
-                  BackgroundVariant.Cross
-                }
-                gap={backgroundVariant === 'dots' ? 20 : 24}
-                size={backgroundVariant === 'dots' ? 1 : 0.4}
-                color={bgColor}
-              />
-            )}
-            {!presentationMode && <Controls position="top-right" />}
-            {!presentationMode && (
-              <MiniMap
+            <DotGrid />
+            {showMinimap && (
+              <MiniMap<SystemNode>
                 position="bottom-right"
-                className="!bg-card !border !border-border !shadow-sm minimap-mask"
-                nodeColor={getMinimapNodeColor}
+                pannable
+                zoomable
+                nodeColor={getMinimapColor}
+                nodeBorderRadius={14}
+                maskColor="color-mix(in oklch, var(--bg) 55%, transparent)"
+                maskStrokeColor="var(--accent)"
+                maskStrokeWidth={1}
+                bgColor="transparent"
+                style={{ width: 176, height: 112 }}
+                className="!m-4 overflow-hidden rounded-[12px] border border-line shadow-[var(--shadow-lg)]"
               />
             )}
-            {!presentationMode && <CanvasToolbar />}
           </ReactFlow>
-          {!presentationMode && <NodePalette />}
-          {!presentationMode && <ConnectionTypePicker />}
-          {!presentationMode && <OnboardingOverlay />}
-          {!presentationMode && <SearchDialog />}
-          {!presentationMode && <ValidationPanel />}
-          {presentationMode && (
-            <button
-              onClick={togglePresentationMode}
-              className="absolute top-4 right-4 z-10 rounded-lg border border-border bg-card/80 px-3 py-1.5 text-xs text-muted-foreground shadow-sm opacity-0 hover:opacity-100 transition-opacity"
-            >
-              Press Esc to exit
-            </button>
-          )}
-          {contextMenu && (
-            <CanvasContextMenu
-              menu={contextMenu}
-              onClose={() => setContextMenu(null)}
-              hasClipboard={!!clipboard}
-              onCopy={handleCopy}
-              onPaste={handlePaste}
-              onDeleteSelection={handleDeleteSelection}
-            />
-          )}
-        </div>
-        {isNodeEditorOpen && !presentationMode && <NodeEditor />}
-        {isEdgeEditorOpen && !presentationMode && <EdgeEditor />}
+        </ValidationWarningsContext.Provider>
+
+        {!presenting && (
+          <>
+            <NodePalette />
+            <CanvasToolbar />
+            <SelectionActions />
+            {showValidation && <ValidationPanel issues={issues} editorOpen={editorOpen} />}
+            {nodes.length === 0 && <EmptyCanvas offsetLeft={libraryOffset} />}
+          </>
+        )}
+
+        <NodeEditor />
+        <EdgeEditor />
+        <ConnectionTypePicker />
+
+        {presenting && <PresentationOverlay order={order} projectName={currentProject?.name} />}
+        {contextMenu && !presenting && (
+          <CanvasContextMenu key={`${contextMenu.x}-${contextMenu.y}`} menu={contextMenu} onClose={closeContextMenu} />
+        )}
+
+        <CommandMenu />
+        <ShortcutsDialog />
+        <OnboardingOverlay />
+        <ShareDialog />
+        <ExportDialog />
       </div>
     </div>
   );
