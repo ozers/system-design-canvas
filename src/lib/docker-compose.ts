@@ -256,9 +256,7 @@ export function parseDockerCompose(content: string): { nodes: SystemNode[]; edge
   });
 
   // Auto-layout
-  const { nodes: layoutedNodes } = getLayoutedElements(nodes, edges, 'TB');
-
-  return { nodes: layoutedNodes, edges };
+  return getLayoutedElements(nodes, edges, 'TB');
 }
 
 // --- File picker ---

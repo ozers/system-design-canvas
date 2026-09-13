@@ -93,10 +93,12 @@ function useToolbarActions() {
   const refit = () => requestAnimationFrame(() => fitView(getFitViewOptions(300)));
 
   const autoLayout = () => {
-    const { nodes, edges, pushHistory, setNodes } = useCanvasStore.getState();
+    const { nodes, edges, pushHistory, setNodes, setEdges } = useCanvasStore.getState();
     if (nodes.length === 0) return;
     pushHistory();
-    setNodes(getLayoutedElements(nodes, edges).nodes);
+    const layouted = getLayoutedElements(nodes, edges);
+    setNodes(layouted.nodes);
+    setEdges(layouted.edges);
     refit();
   };
 
