@@ -52,7 +52,7 @@ It's **opinionated by design**. Instead of a blank canvas with infinite shapes, 
 - **Settings** — Theme, snap to grid, minimap, design checks, animated edges, export / import / clear all data
 - **Keyboard shortcuts** — Press `?` to see them all
 - **Responsive** — Library becomes a bottom sheet and editors become drawers on narrow screens
-- **100% client-side** — localStorage persistence, works offline
+- **100% client-side** — localStorage persistence, static export, deploys to any static host
 
 ## Screenshots
 
@@ -129,7 +129,7 @@ On Windows and Linux use `Ctrl` instead of `⌘`.
 
 | Layer | Technology |
 |-------|-----------|
-| Framework | Next.js 16 (App Router, Turbopack) + React 19 |
+| Framework | Next.js 16 (App Router, Turbopack, static export) + React 19 |
 | Language | TypeScript |
 | Canvas | React Flow v12 |
 | State | Zustand |
@@ -140,14 +140,35 @@ On Windows and Linux use `Ctrl` instead of `⌘`.
 | Sharing | lz-string |
 | Import | js-yaml (docker-compose) |
 | Validation | Zod |
+| Hosting | Vercel, Cloudflare Workers (static assets) |
 
 ## Development
 
 ```bash
-npm run dev      # Dev server with Turbopack
-npm run build    # Production build
-npm run lint     # ESLint
+npm run dev                 # Dev server with Turbopack
+npm run build               # Static export to ./out
+npm run lint                # ESLint
+npm run deploy:cloudflare   # Build and deploy ./out to Cloudflare Workers
 ```
+
+## Deployment
+
+The app is fully client-side and builds to static files (`output: "export"` → `./out`), so any static host works.
+
+| Host | How | Config |
+|------|-----|--------|
+| Vercel | Git integration — `main` deploys to production, PRs get previews | `vercel.json` (redirects old `/canvas/:id` links) |
+| Cloudflare Workers | `npm run deploy:cloudflare` (requires `wrangler login`) | `wrangler.jsonc` (static assets, 404 page) |
+
+### Moving users to a new address
+
+Projects are stored in `localStorage`, which belongs to a single origin — a new domain starts empty. To move users gradually, set on the **old** deployment:
+
+```bash
+NEXT_PUBLIC_MIGRATE_TO=https://your-new-domain.example
+```
+
+The dashboard then shows a banner. *Move my projects* carries projects and settings to `<new domain>/import` inside the URL hash (never sent to a server), where they are previewed and merged. Unset the variable to turn the banner off; nothing is deleted either way.
 
 ## License
 

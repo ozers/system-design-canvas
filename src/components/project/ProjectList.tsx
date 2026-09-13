@@ -21,6 +21,7 @@ import { ProjectModal } from './ProjectModal';
 import { TemplateStrip } from './TemplateStrip';
 import { createFromTemplate, exportProjectFile } from './project-io';
 
+import { canvasPath } from '@/lib/routes';
 type SortKey = 'edited' | 'name' | 'created';
 
 const SORT_LABEL: Record<SortKey, string> = {
@@ -99,7 +100,7 @@ export function ProjectList() {
   const handleUseTemplate = useCallback(
     (templateId: string) => {
       const project = createFromTemplate(templateId);
-      if (project) router.push(`/canvas/${project.id}`);
+      if (project) router.push(canvasPath(project.id));
     },
     [router]
   );
@@ -112,7 +113,7 @@ export function ProjectList() {
     }
     const project = createProject(name, description);
     setModal(null);
-    router.push(`/canvas/${project.id}`);
+    router.push(canvasPath(project.id));
   };
 
   const confirmDelete = (project: Project) => {

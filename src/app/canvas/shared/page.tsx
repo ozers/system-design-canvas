@@ -11,6 +11,7 @@ import { decodeCanvasFromUrl } from '@/lib/share';
 import { formatBytes, plural } from '@/lib/utils';
 import { useProjectStore } from '@/stores/useProjectStore';
 
+import { canvasPath } from '@/lib/routes';
 function SharedCanvasInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -54,7 +55,7 @@ function SharedCanvasInner() {
       decoded.nodes,
       decoded.edges
     );
-    router.replace(`/canvas/${project.id}`);
+    router.replace(canvasPath(project.id));
   };
 
   return (

@@ -22,6 +22,8 @@ interface ProjectStore {
   importProjects: (items: Partial<Project>[]) => Project[];
   /** Remove every project from memory and from this browser. */
   clearAllProjects: () => void;
+  /** Add projects moved from another origin, keeping ids and timestamps. Existing ids are skipped. */
+  mergeProjects: (items: Project[]) => { added: number; skipped: number };
 }
 
 export const useProjectStore = create<ProjectStore>((set, get) => ({
@@ -132,6 +134,16 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     if (get().projects.some((p) => p.id === project.id)) return;
     set({ projects: [...get().projects, project] });
     persist(get());
+  },
+
+  mergeProjects: (items) => {
+    const existing = new Set(get().projects.map((p) => p.id));
+    const fresh = items.filter((p) => !existing.has(p.id));
+    if (fresh.length > 0) {
+      set({ projects: [...get().projects, ...fresh] });
+      persist(get());
+    }
+    return { added: fresh.length, skipped: items.length - fresh.length };
   },
 
   importProjects: (items) => {

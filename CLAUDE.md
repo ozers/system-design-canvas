@@ -10,18 +10,19 @@ System Design Canvas is an opinionated canvas tool for software engineers to thi
 npm run dev          # Dev server with Turbopack
 npm run build        # Production build
 npm run lint         # ESLint
+npm run deploy:cloudflare  # next build + wrangler deploy (static assets from ./out)
 ```
 
 ## Tech Stack
 
-- Next.js 16 (App Router, Turbopack) + React 19 + TypeScript
+- Next.js 16 (App Router, Turbopack, `output: "export"`) + React 19 + TypeScript
 - @xyflow/react v12 (canvas engine)
 - Zustand (state management)
 - Tailwind CSS v4 + shadcn/ui (Radix primitives, restyled)
 - html-to-image (PNG/SVG export), lz-string (share links), js-yaml (docker-compose import), dagre (auto-layout)
 - Zod (localStorage data validation)
 - lucide-react (icons), Geist + Geist Mono (fonts)
-- No backend, no auth, no database
+- No backend, no auth, no database — hosted as static files on Vercel and Cloudflare Workers
 
 ## Design System ("Studio")
 
@@ -40,9 +41,10 @@ npm run lint         # ESLint
 - User settings persist separately under `sdc.settings` (rehydrated client-side in `Providers`)
 - Auto-save: debounced 500ms + beforeunload; `saveStatus` is `saved | saving | error` (retries every 3s)
 - Path alias: `@/*` → `./src/*`
+- **Static export**: no dynamic route segments, route handlers, `headers()`/`cookies()` or server-only features. Pass ids as query params and build links with `canvasPath(id)` from `lib/routes.ts` (`/canvas?id=…`).
 
 ### State Management
-- **useProjectStore** — project CRUD (loadProjects, createProject, deleteProject, restoreProject, renameProject, duplicateProject, importProject(s), clearAllProjects, saveProject → boolean)
+- **useProjectStore** — project CRUD (loadProjects, createProject, deleteProject, restoreProject, renameProject, duplicateProject, importProject(s), mergeProjects, clearAllProjects, saveProject → boolean)
 - **useCanvasStore** — active canvas (nodes, edges, viewport, undo/redo, selection) plus canvas chrome state (libraryCollapsed, command menu / shortcuts / export / share dialogs, presentation `{active, index}`) and actions (duplicateNodes, groupSelection, alignSelection, toggleLock, bringToFront, reverseEdge, clearCanvas)
 - **useSettingsStore** — theme (light/dark/system), snap, minimap, validation, animatedEdges
 - **useToastStore** — `toast({ message, tone, icon, action })`, bottom-right stack of max 3
@@ -57,6 +59,8 @@ npm run lint         # ESLint
 6. **localStorage**: Single key, versioned schema, ~5MB limit = ~100 projects comfortably.
 7. **Export**: html-to-image renders the diagram bounds of `.react-flow` → PNG/SVG (1–3×, optional transparent background); JSON and Mermaid are text exports.
 8. **Share links** encode `{n: nodes, e: edges}` with LZString in `/canvas/shared?d=…`; the landing page previews before saving a copy.
+9. **Hosting**: `next build` writes `./out`. Vercel deploys from Git (`vercel.json` 308-redirects legacy `/canvas/:id` → `/canvas?id=:id`); Cloudflare serves `./out` as Workers static assets (`wrangler.jsonc`).
+10. **Host migration**: localStorage is per origin. When `NEXT_PUBLIC_MIGRATE_TO` is set, `MigrationBanner` on the dashboard sends projects + `sdc.settings` + onboarding flag to `<target>/import#<lz payload>`; `/import` merges them with `mergeProjects` (keeps ids, skips existing). Payloads over ~1.9 MB fall back to a JSON backup download. Logic lives in `lib/migration.ts`.
 
 ## Data Model
 
@@ -122,6 +126,9 @@ Categories: Client & Edge, Compute, Data, Async, Observability, Other. Each entr
 ## Project Structure
 
 ```
+next.config.ts            # output: "export"
+wrangler.jsonc            # Cloudflare Workers static assets
+vercel.json               # Legacy route redirects
 src/
   app/
     layout.tsx              # Root layout, fonts, theme head script, Providers
@@ -129,8 +136,9 @@ src/
     globals.css             # Tailwind + token mapping, motion, React Flow overrides
     settings/page.tsx       # Settings (appearance, canvas, data, about)
     canvas/
-      [id]/page.tsx         # Canvas page
+      page.tsx              # Canvas page (/canvas?id=…)
       shared/page.tsx       # Share-link landing (preview → save copy)
+    import/page.tsx         # Receives projects moved from another origin
   styles/
     tokens.css              # Studio design tokens (light/dark)
   components/
@@ -163,7 +171,7 @@ src/
       ProtocolPicker.tsx, ConnectionTypePicker.tsx
       EdgeEditor.tsx        # Floating connection editor panel / drawer
       edge-registry.ts
-    project/                # Dashboard: list, cards, template strip/grid, modals, import
+    project/                # Dashboard: list, cards, template grid, modals, import, MigrationBanner
     shared/MinimapThumb.tsx # SVG thumbnail of a design
     ui/                     # Design-system primitives (see Design System)
   stores/
@@ -172,6 +180,8 @@ src/
     useAutoSave.ts, useKeyboardShortcuts.ts, useTheme.ts, useMediaQuery.ts
   lib/
     storage.ts              # localStorage read/write/migrate
+    routes.ts               # canvasPath(id)
+    migration.ts            # Move projects between origins (URL-hash payload)
     export.ts               # PNG/SVG/JSON export, clipboard
     share.ts                # Share URL encode/decode
     mermaid.ts, docker-compose.ts, auto-layout.ts
