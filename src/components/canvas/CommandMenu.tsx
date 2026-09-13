@@ -189,10 +189,12 @@ function CommandMenuBody({ onClose }: { onClose: () => void }) {
         label: 'Auto layout',
         icon: <ActionIcon icon={LayoutDashboard} />,
         run: () => {
-          const { nodes: current, edges, pushHistory, setNodes } = store();
+          const { nodes: current, edges, pushHistory, setNodes, setEdges } = store();
           if (current.length === 0) return;
           pushHistory();
-          setNodes(getLayoutedElements(current, edges).nodes);
+          const layouted = getLayoutedElements(current, edges);
+          setNodes(layouted.nodes);
+          setEdges(layouted.edges);
           requestAnimationFrame(() => fitView(getFitViewOptions(300)));
         },
       },
