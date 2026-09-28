@@ -1,4 +1,5 @@
 import { parseDockerCompose } from '@/lib/docker-compose';
+import { parseJsonImport, titleFromFilename, type JsonImportItem } from '@/lib/json-import';
 import { TEMPLATES } from '@/lib/templates';
 import { downloadFile } from '@/lib/utils';
 import { useProjectStore } from '@/stores/useProjectStore';
@@ -27,27 +28,9 @@ export function pickFile(accept: string): Promise<File | null> {
   });
 }
 
-function isProjectLike(value: unknown): value is Partial<Project> {
-  if (!value || typeof value !== 'object') return false;
-  const v = value as Partial<Project>;
-  return Array.isArray(v.nodes) && Array.isArray(v.edges);
-}
-
-/** Parse an exported file: one project, or `{ version, projects: [...] }`. Throws a readable error. */
-export function parseProjectsFile(text: string): Partial<Project>[] {
-  let data: unknown;
-  try {
-    data = JSON.parse(text);
-  } catch (e) {
-    throw new Error(`Not valid JSON: ${e instanceof Error ? e.message : 'parse error'}`);
-  }
-  if (data && typeof data === 'object' && Array.isArray((data as { projects?: unknown }).projects)) {
-    const list = (data as { projects: unknown[] }).projects.filter(isProjectLike);
-    if (list.length === 0) throw new Error('The file has no projects in it.');
-    return list;
-  }
-  if (isProjectLike(data)) return [data];
-  throw new Error('Not a System Design Canvas project: expected "nodes" and "edges".');
+/** Parse an exported file, a project backup, or an API endpoint list. Throws a readable error. */
+export function parseProjectsFile(text: string): JsonImportItem[] {
+  return parseJsonImport(text);
 }
 
 /** Danger toast with a Details action that reveals the underlying message. */
@@ -61,7 +44,7 @@ export function showReadError(fileName: string, error: unknown) {
 }
 
 /**
- * Import a picked or dropped file (.json export or docker-compose .yml/.yaml).
+ * Import a picked or dropped file: project JSON, an API endpoint list, or docker-compose.
  * Returns the created projects; on failure shows an error toast and returns [].
  */
 export async function importFile(file: File): Promise<Project[]> {
@@ -74,7 +57,10 @@ export async function importFile(file: File): Promise<Project[]> {
       const name = file.name.replace(/\.ya?ml$/i, '');
       return importProjects([{ name, description: `Imported from ${file.name}`, nodes, edges }]);
     }
-    return importProjects(parseProjectsFile(text));
+    const items = parseProjectsFile(text).map((item) =>
+      item.fromEndpoints ? { ...item, name: titleFromFilename(file.name) } : item
+    );
+    return importProjects(items);
   } catch (e) {
     showReadError(file.name, e);
     return [];

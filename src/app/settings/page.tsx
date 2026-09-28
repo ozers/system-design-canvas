@@ -185,7 +185,7 @@ export default function SettingsPage() {
                 Export
               </Button>
             </Row>
-            <Row title="Import" description="Restore from an exported file, or add a single project.">
+            <Row title="Import" description="Restore an export, or turn an endpoint list into a diagram.">
               <Button variant="secondary" onClick={handleImport}>
                 <Upload />
                 Import
