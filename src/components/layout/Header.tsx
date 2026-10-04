@@ -52,7 +52,7 @@ export function Header({ onImportJson, onImportDockerCompose, containerClassName
                 {onImportJson && (
                   <DropdownMenuItem onSelect={onImportJson}>
                     <FileJson />
-                    Project JSON
+                    JSON
                   </DropdownMenuItem>
                 )}
                 {onImportDockerCompose && (

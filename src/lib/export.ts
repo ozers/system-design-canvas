@@ -1,5 +1,6 @@
 import { toBlob, toPng, toSvg } from 'html-to-image';
 import type { SystemNode, SystemEdge } from '@/types';
+import { parseJsonImport } from '@/lib/json-import';
 import { downloadFile } from '@/lib/utils';
 
 export type ImageFormat = 'png' | 'svg';
@@ -218,11 +219,11 @@ export function importFromJson(): Promise<{ nodes: SystemNode[]; edges: SystemEd
       const reader = new FileReader();
       reader.onload = () => {
         try {
-          const data = JSON.parse(reader.result as string);
-          if (!Array.isArray(data.nodes) || !Array.isArray(data.edges)) {
-            throw new Error('Invalid format: expected { nodes, edges }');
+          const items = parseJsonImport(reader.result as string);
+          if (items.length !== 1) {
+            throw new Error(`This file has ${items.length} projects. Import it from the dashboard.`);
           }
-          resolve({ nodes: data.nodes, edges: data.edges });
+          resolve({ nodes: items[0].nodes, edges: items[0].edges });
         } catch (err) {
           reject(err);
         }
