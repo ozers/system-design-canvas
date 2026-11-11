@@ -20,7 +20,8 @@ interface PendingEdge {
   position: { x: number; y: number };
 }
 
-export type SaveStatus = 'saved' | 'saving' | 'error';
+/** `unsaved`: the canvas has no project to save into (e.g. it was deleted). */
+export type SaveStatus = 'saved' | 'saving' | 'error' | 'unsaved';
 
 interface PresentationState {
   active: boolean;

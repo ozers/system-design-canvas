@@ -7,14 +7,19 @@ import { useProjectStore } from '@/stores/useProjectStore';
 const DEBOUNCE_MS = 500;
 const RETRY_MS = 3000;
 
-/** Write the active canvas into its project. Returns false when localStorage refused the write. */
-function persistCanvas(): boolean {
+/**
+ * Write the active canvas into its project.
+ * - `saved`: written to localStorage.
+ * - `failed`: localStorage refused the write (quota, private mode); worth retrying.
+ * - `missing`: there is no such project, so nothing was written. Never report this as saved.
+ */
+export function persistCanvas(): 'saved' | 'failed' | 'missing' {
   const { nodes, edges, viewport, projectId } = useCanvasStore.getState();
-  if (!projectId) return true;
+  if (!projectId) return 'missing';
   const projectStore = useProjectStore.getState();
   const project = projectStore.projects.find((p) => p.id === projectId);
-  if (!project) return true;
-  return projectStore.saveProject({ ...project, nodes, edges, viewport });
+  if (!project) return 'missing';
+  return projectStore.saveProject({ ...project, nodes, edges, viewport }) ? 'saved' : 'failed';
 }
 
 /** Debounced save (500ms) + beforeunload. Drives saveStatus; retries every 3s after a failure. */
@@ -37,8 +42,12 @@ export function useAutoSave() {
       debounceRef.current = null;
       if (retryRef.current) clearTimeout(retryRef.current);
       retryRef.current = null;
-      if (persistCanvas()) {
+      const result = persistCanvas();
+      if (result === 'saved') {
         useCanvasStore.getState().setSaveStatus('saved');
+      } else if (result === 'missing') {
+        // Retrying can't help: the project isn't there.
+        useCanvasStore.getState().setSaveStatus('unsaved');
       } else {
         useCanvasStore.getState().setSaveStatus('error');
         retryRef.current = setTimeout(attempt, RETRY_MS);

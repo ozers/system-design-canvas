@@ -35,6 +35,7 @@ const STATUS: Record<SaveStatus, { label: string; dot: string }> = {
   saved: { label: 'Saved', dot: 'bg-ok' },
   saving: { label: 'Saving…', dot: 'bg-warn animate-status-pulse' },
   error: { label: 'Offline · retrying', dot: 'bg-danger' },
+  unsaved: { label: 'Not saved', dot: 'bg-danger' },
 };
 
 /** "Saving…" only when a save takes longer than 300ms; otherwise stay on "Saved". */
