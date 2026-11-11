@@ -38,6 +38,7 @@ import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useIsNarrow } from '@/hooks/useMediaQuery';
 import { createSystemNode } from '@/lib/node-factory';
 import { normalizeConnection } from '@/lib/connection';
+import { createConnectMenuTracker, pointerPosition } from '@/lib/connect-menu';
 import { getMinimapColor } from '@/lib/minimap';
 import { computeIssues, ValidationWarningsContext } from '@/lib/validation';
 import { cn } from '@/lib/utils';
@@ -99,7 +100,8 @@ function CanvasInner({ projectId }: { projectId: string }) {
   const narrow = useIsNarrow();
   const presenting = presentation.active;
 
-  const connectEndPos = useRef<{ x: number; y: number } | null>(null);
+  /** Holds the edge a connection drag created until onConnectEnd gives its drop point. */
+  const [connectMenu] = useState(createConnectMenuTracker);
   /** Node the current connection drag started on; edges always point away from it. */
   const connectStartNodeId = useRef<string | null>(null);
   const edgeReconnectSuccessful = useRef(true);
@@ -232,27 +234,33 @@ function CanvasInner({ projectId }: { projectId: string }) {
   // Snapshot before the move so ⌘Z puts the nodes back where they were.
   const onNodeDragStart = useCallback(() => pushHistory(), [pushHistory]);
 
-  const onConnectStart: OnConnectStart = useCallback((_, { nodeId }) => {
-    connectStartNodeId.current = nodeId;
-  }, []);
+  const onConnectStart: OnConnectStart = useCallback(
+    (_, { nodeId }) => {
+      connectStartNodeId.current = nodeId;
+      connectMenu.start();
+    },
+    [connectMenu]
+  );
 
+  // React Flow calls onConnect before onConnectEnd, so the menu opens in onConnectEnd,
+  // once this gesture's drop point is known.
   const handleConnect: OnConnect = useCallback(
     (connection) => {
       onConnect(normalizeConnection(connection, connectStartNodeId.current));
-      if (!connectEndPos.current) return;
       const latest = useCanvasStore.getState().edges;
       const newEdge = latest[latest.length - 1];
-      if (newEdge) setPendingEdge({ edgeId: newEdge.id, position: connectEndPos.current });
+      if (newEdge) connectMenu.connected(newEdge.id);
     },
-    [onConnect, setPendingEdge]
+    [onConnect, connectMenu]
   );
 
-  const onConnectEnd = useCallback((event: MouseEvent | TouchEvent) => {
-    connectEndPos.current =
-      'changedTouches' in event
-        ? { x: event.changedTouches[0].clientX, y: event.changedTouches[0].clientY }
-        : { x: event.clientX, y: event.clientY };
-  }, []);
+  const onConnectEnd = useCallback(
+    (event: MouseEvent | TouchEvent) => {
+      const request = connectMenu.end(pointerPosition(event));
+      if (request) setPendingEdge(request);
+    },
+    [connectMenu, setPendingEdge]
+  );
 
   const onReconnectStart = useCallback(() => {
     edgeReconnectSuccessful.current = false;
