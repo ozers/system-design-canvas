@@ -84,6 +84,27 @@ export type SystemEdgeData = z.infer<typeof SystemEdgeDataSchema>;
 export type SystemNode = Node<SystemNodeData, string>;
 export type SystemEdge = Edge<SystemEdgeData>;
 
+// Share-link payload: React Flow nodes/edges whose data must match the schemas above.
+// Other React Flow fields (style, parentId, width, ...) pass through unchanged.
+export const SharedNodeSchema = z.looseObject({
+  id: z.string(),
+  type: z.string().optional(),
+  position: z.object({ x: z.number(), y: z.number() }),
+  data: SystemNodeDataSchema,
+});
+
+export const SharedEdgeSchema = z.looseObject({
+  id: z.string(),
+  source: z.string(),
+  target: z.string(),
+  data: SystemEdgeDataSchema.optional(),
+});
+
+export const SharedCanvasSchema = z.object({
+  n: z.array(SharedNodeSchema),
+  e: z.array(SharedEdgeSchema),
+});
+
 // Project
 export const ProjectSchema = z.object({
   id: z.string(),

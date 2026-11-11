@@ -1,5 +1,5 @@
 import LZString from 'lz-string';
-import type { SystemNode, SystemEdge } from '@/types';
+import { SharedCanvasSchema, type SystemNode, type SystemEdge } from '@/types';
 
 export function encodeCanvasToUrl(nodes: SystemNode[], edges: SystemEdge[]): string {
   const payload = JSON.stringify({ n: nodes, e: edges });
@@ -17,14 +17,34 @@ export function getShareStats(url: string): { bytes: number; tooLong: boolean } 
   return { bytes, tooLong: bytes > SHARE_URL_WARN_BYTES };
 }
 
-export function decodeCanvasFromUrl(encoded: string): { nodes: SystemNode[]; edges: SystemEdge[] } | null {
+/**
+ * Why a share link was rejected:
+ * - `unreadable`: not decompressible JSON (usually cut off when pasted);
+ * - `invalid`: readable, but the nodes/edges don't match the canvas schema.
+ */
+export type ShareDecodeError = 'unreadable' | 'invalid';
+
+export type ShareDecodeResult =
+  | { ok: true; nodes: SystemNode[]; edges: SystemEdge[] }
+  | { ok: false; error: ShareDecodeError };
+
+export function decodeCanvasFromUrl(encoded: string): ShareDecodeResult {
+  let data: unknown;
   try {
     const decompressed = LZString.decompressFromEncodedURIComponent(encoded);
-    if (!decompressed) return null;
-    const data = JSON.parse(decompressed);
-    if (!Array.isArray(data.n) || !Array.isArray(data.e)) return null;
-    return { nodes: data.n, edges: data.e };
+    if (!decompressed) return { ok: false, error: 'unreadable' };
+    data = JSON.parse(decompressed);
   } catch {
-    return null;
+    return { ok: false, error: 'unreadable' };
   }
+
+  const result = SharedCanvasSchema.safeParse(data);
+  if (!result.success) return { ok: false, error: 'invalid' };
+
+  const nodes = result.data.n as SystemNode[];
+  const edges = result.data.e as SystemEdge[];
+  const ids = new Set(nodes.map((n) => n.id));
+  if (ids.size !== nodes.length) return { ok: false, error: 'invalid' };
+  if (edges.some((e) => !ids.has(e.source) || !ids.has(e.target))) return { ok: false, error: 'invalid' };
+  return { ok: true, nodes, edges };
 }

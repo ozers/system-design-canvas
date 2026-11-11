@@ -20,13 +20,14 @@ function SharedCanvasInner() {
   const [opening, setOpening] = useState(false);
 
   const data = searchParams.get('d');
-  const decoded = useMemo(() => (data ? decodeCanvasFromUrl(data) : null), [data]);
+  const result = useMemo(() => (data ? decodeCanvasFromUrl(data) : null), [data]);
 
   useEffect(() => {
     if (!loaded) loadProjects();
   }, [loaded, loadProjects]);
 
-  if (!decoded || !data) {
+  if (!result || !result.ok || !data) {
+    const invalid = result?.ok === false && result.error === 'invalid';
     return (
       <div className="grid w-full max-w-[300px] justify-items-center gap-2 text-center">
         <span className="inline-flex size-11 items-center justify-center rounded-[12px] bg-[color-mix(in_oklch,var(--danger)_12%,transparent)] text-danger">
@@ -34,7 +35,9 @@ function SharedCanvasInner() {
         </span>
         <h1 className="mt-1 text-[15px] leading-[1.3] font-semibold">{"This link can't be opened"}</h1>
         <p className="text-[12.5px] leading-[1.45] text-pretty text-ink-2">
-          It may have been cut off when pasted — share links are long. Ask for it again or an exported JSON.
+          {invalid
+            ? "The design in this link is damaged or from an incompatible version, so nothing was saved. Ask for a new link or an exported JSON."
+            : 'It may have been cut off when pasted — share links are long. Ask for it again or an exported JSON.'}
         </p>
         <Button variant="secondary" asChild className="mt-1.5">
           <Link href="/">Go to dashboard</Link>
@@ -43,6 +46,7 @@ function SharedCanvasInner() {
     );
   }
 
+  const decoded = result;
   const components = countComponents(decoded.nodes);
   const size = formatBytes(new TextEncoder().encode(data).length);
 
