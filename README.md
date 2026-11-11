@@ -171,6 +171,16 @@ NEXT_PUBLIC_MIGRATE_TO=https://your-new-domain.example
 
 The dashboard then shows a banner. *Move my projects* carries projects and settings to `<new domain>/import` inside the URL hash (never sent to a server), where they are previewed and merged. Unset the variable to turn the banner off; nothing is deleted either way.
 
+### Analytics (off by default)
+
+The default build loads no analytics script and makes no analytics request. To count page views with [Cloudflare Web Analytics](https://developers.cloudflare.com/web-analytics/about/), set the site token from the Cloudflare dashboard (Web Analytics → Manage site) **at build time**:
+
+```bash
+NEXT_PUBLIC_CF_BEACON_TOKEN=your-site-token npm run deploy:cloudflare
+```
+
+The build then adds Cloudflare's [manual-setup beacon](https://developers.cloudflare.com/web-analytics/faq/) to every page, and the landing page's privacy copy says page views are counted. Cloudflare [states](https://www.cloudflare.com/web-analytics/) the beacon uses no client-side state such as cookies or localStorage and does not fingerprint visitors, and that Web Analytics does not collect visitors' personal data ([about](https://developers.cloudflare.com/web-analytics/about/)). The beacon reports to `cloudflareinsights.com`; with a Content Security Policy, allow `https://static.cloudflareinsights.com/beacon.min.js` in `script-src` and `cloudflareinsights.com` in `connect-src`. Diagrams stay in `localStorage`; the beacon strips the query string and fragment from the URLs it reports, so share-link payloads are not sent.
+
 ## Contributing
 
 Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, project layout and how to add a component type or template; changes are listed in [CHANGELOG.md](CHANGELOG.md).
