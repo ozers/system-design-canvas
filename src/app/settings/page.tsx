@@ -17,6 +17,7 @@ import { cn, formatBytes, plural } from '@/lib/utils';
 import { useProjectStore } from '@/stores/useProjectStore';
 import { useSettingsStore, type ThemePreference } from '@/stores/useSettingsStore';
 import { toast } from '@/stores/useToastStore';
+import { DASHBOARD_PATH } from '@/lib/routes';
 
 const SECTIONS = [
   { id: 'appearance', label: 'Appearance' },
@@ -138,7 +139,7 @@ export default function SettingsPage() {
         <div className="grid max-w-[640px] min-w-0 gap-8">
           <div className="grid gap-2">
             <Link
-              href="/"
+              href={DASHBOARD_PATH}
               className="focus-ring -ml-1 inline-flex w-fit items-center gap-1 rounded-full px-1 text-[13px] text-ink-2 transition-colors duration-[120ms] hover:text-ink"
             >
               <ArrowLeft className="size-3.5" />

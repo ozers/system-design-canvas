@@ -11,6 +11,7 @@ import { useSettingsStore } from '@/stores/useSettingsStore';
 import { toast } from '@/stores/useToastStore';
 import { applyMigratedPreferences, decodeMigrationHash, type MigrationPayload } from '@/lib/migration';
 import { plural } from '@/lib/utils';
+import { DASHBOARD_PATH } from '@/lib/routes';
 
 type State = { kind: 'loading' } | { kind: 'invalid' } | { kind: 'ready'; payload: MigrationPayload };
 
@@ -52,7 +53,7 @@ export default function ImportPage() {
     // Drop the payload from the address bar and history.
     window.history.replaceState(null, '', '/import');
     toast({ message: added > 0 ? `Imported ${plural(added, 'project')}` : 'Everything was already here', tone: 'ok' });
-    router.replace('/');
+    router.replace(DASHBOARD_PATH);
   };
 
   return (
@@ -68,7 +69,7 @@ export default function ImportPage() {
             exported JSON from the dashboard.
           </p>
           <Button variant="secondary" asChild className="mt-1.5">
-            <Link href="/">Go to dashboard</Link>
+            <Link href={DASHBOARD_PATH}>Go to dashboard</Link>
           </Button>
         </div>
       ) : (
@@ -101,7 +102,7 @@ export default function ImportPage() {
                 </Button>
               ) : null}
               <Button variant="secondary" asChild>
-                <Link href="/">Dashboard</Link>
+                <Link href={DASHBOARD_PATH}>Dashboard</Link>
               </Button>
             </div>
           </div>

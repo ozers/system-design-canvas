@@ -32,7 +32,7 @@ import { cn } from '@/lib/utils';
 import type { SystemNodeData, SystemNodeType } from '@/types';
 
 import { getFitViewOptions } from './canvas-helpers';
-import { canvasPath } from '@/lib/routes';
+import { canvasPath, DASHBOARD_PATH } from '@/lib/routes';
 type GroupName = 'Add component' | 'Actions' | 'Jump to' | 'Go to';
 
 interface CommandItem {
@@ -281,7 +281,7 @@ function CommandMenuBody({ onClose }: { onClose: () => void }) {
         group: 'Go to',
         label: 'Projects',
         icon: <ActionIcon icon={FolderOpen} />,
-        run: () => router.push('/'),
+        run: () => router.push(DASHBOARD_PATH),
       },
       {
         id: 'goto-settings',

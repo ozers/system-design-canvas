@@ -11,7 +11,7 @@ import { decodeCanvasFromUrl } from '@/lib/share';
 import { formatBytes, plural } from '@/lib/utils';
 import { useProjectStore } from '@/stores/useProjectStore';
 
-import { canvasPath } from '@/lib/routes';
+import { canvasPath, DASHBOARD_PATH } from '@/lib/routes';
 function SharedCanvasInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -40,7 +40,7 @@ function SharedCanvasInner() {
             : 'It may have been cut off when pasted — share links are long. Ask for it again or an exported JSON.'}
         </p>
         <Button variant="secondary" asChild className="mt-1.5">
-          <Link href="/">Go to dashboard</Link>
+          <Link href={DASHBOARD_PATH}>Go to dashboard</Link>
         </Button>
       </div>
     );
@@ -87,7 +87,7 @@ function SharedCanvasInner() {
             Open in my projects
           </Button>
           <Button variant="secondary" asChild>
-            <Link href="/">Dashboard</Link>
+            <Link href={DASHBOARD_PATH}>Dashboard</Link>
           </Button>
         </div>
       </div>

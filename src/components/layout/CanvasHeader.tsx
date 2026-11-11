@@ -29,6 +29,7 @@ import {
 import { getShortcutKeys } from '@/lib/shortcuts';
 import { cn } from '@/lib/utils';
 import { shortcutLabel } from '@/components/canvas/canvas-helpers';
+import { DASHBOARD_PATH } from '@/lib/routes';
 
 const STATUS: Record<SaveStatus, { label: string; dot: string }> = {
   saved: { label: 'Saved', dot: 'bg-ok' },
@@ -122,7 +123,7 @@ export function CanvasHeader({ projectId, projectName }: { projectId: string; pr
     <header className="flex h-[52px] shrink-0 items-center gap-2 bg-bg px-4">
       <SimpleTooltip label="Projects">
         <Button variant="icon" asChild>
-          <Link href="/" aria-label="Back to projects">
+          <Link href={DASHBOARD_PATH} aria-label="Back to projects">
             <ArrowLeft className="size-4" />
           </Link>
         </Button>
@@ -132,7 +133,7 @@ export function CanvasHeader({ projectId, projectName }: { projectId: string; pr
         {!narrow && (
           <>
             <Link
-              href="/"
+              href={DASHBOARD_PATH}
               className="rounded-[6px] text-[13.5px] whitespace-nowrap text-ink-3 transition-colors duration-[120ms] hover:text-ink"
             >
               Projects
