@@ -6,6 +6,8 @@ export const BACKUP_KEY = 'system-design-canvas.backup';
 /** Projects that failed validation, kept verbatim so they can be recovered by hand. */
 export const QUARANTINE_KEY = 'system-design-canvas.quarantine';
 const CURRENT_VERSION = 1;
+/** Signature of the recovery state the user last dismissed (see getRecoveryState). */
+export const RECOVERY_SEEN_KEY = 'sdc.recovery-seen';
 
 export interface QuarantinedProject {
   quarantinedAt: string;
@@ -184,4 +186,66 @@ function migrate(data: AppData): AppData {
   // Future migrations go here
   // if (data.version < 2) { ... data.version = 2; }
   return { ...data, version: CURRENT_VERSION };
+}
+
+export interface RecoveryState {
+  /** Projects kept under QUARANTINE_KEY because they failed validation. */
+  quarantined: number;
+  /** The last load could not read the stored value at all (shown as 0 projects). */
+  unreadable: boolean;
+}
+
+function readKey(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function recoverySignature(quarantined: number): string {
+  return `${quarantined}:${readKey(BACKUP_KEY)?.length ?? 0}`;
+}
+
+/**
+ * Data the last load could not read and kept aside, for a notice on the dashboard. Null when
+ * there is nothing to report or the user dismissed this exact state (a new incident shows again).
+ * Call after loadAppData().
+ */
+export function getRecoveryState(): RecoveryState | null {
+  if (typeof window === 'undefined') return null;
+  const quarantined = loadQuarantine().length;
+  if (quarantined === 0 && !unreadableStorage) return null;
+  if (readKey(RECOVERY_SEEN_KEY) === recoverySignature(quarantined)) return null;
+  return { quarantined, unreadable: unreadableStorage };
+}
+
+/** Hide the notice until the quarantine or backup changes. */
+export function dismissRecovery(): void {
+  try {
+    localStorage.setItem(RECOVERY_SEEN_KEY, recoverySignature(loadQuarantine().length));
+  } catch {
+    // Not remembering the dismissal is harmless.
+  }
+}
+
+/**
+ * JSON with everything kept aside: the quarantined projects and the raw backup (parsed when it
+ * is JSON, otherwise the original string), for recovering by hand.
+ */
+export function buildRecoveryExport(now = new Date()): string {
+  const raw = readKey(BACKUP_KEY);
+  let backup: unknown = raw;
+  if (raw !== null) {
+    try {
+      backup = JSON.parse(raw);
+    } catch {
+      backup = raw;
+    }
+  }
+  return JSON.stringify(
+    { app: 'system-design-canvas', kind: 'recovery', exportedAt: now.toISOString(), quarantine: loadQuarantine(), backup },
+    null,
+    2
+  );
 }

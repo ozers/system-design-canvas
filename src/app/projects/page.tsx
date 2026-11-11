@@ -4,6 +4,7 @@ import { Header } from '@/components/layout/Header';
 import { ImportDropZone } from '@/components/project/ImportDropZone';
 import { MigrationBanner } from '@/components/project/MigrationBanner';
 import { ProjectList } from '@/components/project/ProjectList';
+import { RecoveryNotice } from '@/components/project/RecoveryNotice';
 import { useProjectImport } from '@/components/project/useProjectImport';
 
 export default function DashboardPage() {
@@ -14,6 +15,7 @@ export default function DashboardPage() {
       <Header onImportJson={importJson} onImportDockerCompose={importDockerCompose} />
       <main className="mx-auto w-full max-w-[1128px] px-6 pt-10 pb-20">
         <MigrationBanner />
+        <RecoveryNotice />
         <ProjectList />
       </main>
       <ImportDropZone onFiles={handleFiles} />

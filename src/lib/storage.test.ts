@@ -2,7 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   BACKUP_KEY,
   QUARANTINE_KEY,
+  buildRecoveryExport,
   clearAppData,
+  dismissRecovery,
+  getRecoveryState,
   loadAppData,
   loadQuarantine,
   saveAppData,
@@ -169,5 +172,54 @@ describe('saveAppData after a failed load', () => {
     expect(storage.map.has(KEY)).toBe(false);
     expect(storage.map.has(BACKUP_KEY)).toBe(true);
     expect(storage.map.has(QUARANTINE_KEY)).toBe(true);
+  });
+});
+
+describe('recovery notice state (QA #4)', () => {
+  it('reports nothing for healthy storage', () => {
+    store({ version: 1, projects: [project('a')], lastOpenedProjectId: null });
+    loadAppData();
+    expect(getRecoveryState()).toBeNull();
+  });
+
+  it('counts quarantined projects after a load', () => {
+    store({ version: 1, projects: [project('a'), { id: 'bad', nodes: 'oops' }], lastOpenedProjectId: null });
+    loadAppData();
+    expect(getRecoveryState()).toEqual({ quarantined: 1, unreadable: false });
+  });
+
+  it('reports a store that could not be read at all', () => {
+    store('{not json');
+    loadAppData();
+    expect(getRecoveryState()).toEqual({ quarantined: 0, unreadable: true });
+  });
+
+  it('stays dismissed until something new is kept aside', () => {
+    store({ version: 1, projects: [project('a'), { id: 'bad', nodes: 'oops' }], lastOpenedProjectId: null });
+    loadAppData();
+    dismissRecovery();
+    loadAppData();
+    expect(getRecoveryState()).toBeNull();
+
+    store({ version: 1, projects: [project('a'), { id: 'worse', edges: 1 }], lastOpenedProjectId: null });
+    loadAppData();
+    expect(getRecoveryState()).toEqual({ quarantined: 2, unreadable: false });
+  });
+
+  it('exports the quarantine and the raw backup as JSON', () => {
+    const bad = { id: 'bad', nodes: 'oops' };
+    store({ version: 1, projects: [project('a'), bad], lastOpenedProjectId: null });
+    loadAppData();
+    const out = JSON.parse(buildRecoveryExport(new Date('2026-11-11T00:00:00.000Z')));
+    expect(out.kind).toBe('recovery');
+    expect(out.exportedAt).toBe('2026-11-11T00:00:00.000Z');
+    expect(out.quarantine.map((q: { raw: unknown }) => q.raw)).toEqual([bad]);
+    expect(out.backup.projects).toHaveLength(2);
+  });
+
+  it('keeps an unparseable backup as the original string', () => {
+    store('{not json');
+    loadAppData();
+    expect(JSON.parse(buildRecoveryExport()).backup).toBe('{not json');
   });
 });
