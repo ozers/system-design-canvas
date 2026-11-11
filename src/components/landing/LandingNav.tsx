@@ -47,13 +47,13 @@ export function LandingNav() {
               )}
             </Link>
           </Button>
-          <SimpleTooltip label="Source on GitHub">
-            <Button variant="icon" asChild>
-              <a href={GITHUB_URL} target="_blank" rel="noreferrer" aria-label="Source on GitHub">
-                <GithubIcon className="size-4" />
-              </a>
-            </Button>
-          </SimpleTooltip>
+          <Button variant="secondary" asChild>
+            <a href={GITHUB_URL} target="_blank" rel="noreferrer">
+              <GithubIcon className="size-3.5" />
+              <span className="sm:hidden">Star</span>
+              <span className="hidden sm:inline">Star on GitHub</span>
+            </a>
+          </Button>
           <SimpleTooltip label={theme === 'dark' ? 'Light theme' : 'Dark theme'}>
             <Button variant="icon" onClick={toggleTheme} aria-label="Toggle theme">
               {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}

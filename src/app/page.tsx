@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { ClosingCta } from '@/components/landing/ClosingCta';
 import { BuildingBlocks } from '@/components/landing/BuildingBlocks';
 import { Features } from '@/components/landing/Features';
 import { Footer } from '@/components/landing/Footer';
@@ -24,6 +25,7 @@ export default function LandingPage() {
         <BuildingBlocks />
         <Features />
         <LocalFirst />
+        <ClosingCta />
       </main>
       <Footer />
     </div>
