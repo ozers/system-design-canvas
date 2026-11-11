@@ -12,6 +12,7 @@ import {
   reconnectEdge,
   useReactFlow,
   useStore,
+  type OnBeforeDelete,
   type OnConnect,
   type OnConnectStart,
   type OnEdgesChange,
@@ -80,7 +81,7 @@ function CanvasInner({ projectId }: { projectId: string }) {
   const selectedEdgeId = useCanvasStore((s) => s.selectedEdgeId);
   const initCanvas = useCanvasStore((s) => s.initCanvas);
   const addNode = useCanvasStore((s) => s.addNode);
-  const deleteNode = useCanvasStore((s) => s.deleteNode);
+  const removeElements = useCanvasStore((s) => s.removeElements);
   const deleteEdge = useCanvasStore((s) => s.deleteEdge);
   const pushHistory = useCanvasStore((s) => s.pushHistory);
   const setPendingEdge = useCanvasStore((s) => s.setPendingEdge);
@@ -210,10 +211,17 @@ function CanvasInner({ projectId }: { projectId: string }) {
     setContextMenu(null);
   }, [setSelectedNodeId, setSelectedEdgeId]);
 
-  const onNodesDelete = useCallback((deleted: SystemNode[]) => deleted.forEach((n) => deleteNode(n.id)), [deleteNode]);
-  const onEdgesDelete = useCallback(
-    (deleted: SystemEdgeModel[]) => deleted.forEach((e) => deleteEdge(e.id)),
-    [deleteEdge]
+  // ⌫ deletes the whole selection as one undo step. The store removes everything itself, so
+  // React Flow's own per-element removal (and onNodesDelete/onEdgesDelete) is cancelled.
+  const onBeforeDelete: OnBeforeDelete<SystemNode, SystemEdgeModel> = useCallback(
+    async ({ nodes: deletedNodes, edges: deletedEdges }) => {
+      removeElements(
+        deletedNodes.map((n) => n.id),
+        deletedEdges.map((e) => e.id)
+      );
+      return false;
+    },
+    [removeElements]
   );
 
   const onMoveEnd = useCallback(
@@ -221,7 +229,8 @@ function CanvasInner({ projectId }: { projectId: string }) {
     [setViewport]
   );
 
-  const onNodeDragStop = useCallback(() => pushHistory(), [pushHistory]);
+  // Snapshot before the move so ⌘Z puts the nodes back where they were.
+  const onNodeDragStart = useCallback(() => pushHistory(), [pushHistory]);
 
   const onConnectStart: OnConnectStart = useCallback((_, { nodeId }) => {
     connectStartNodeId.current = nodeId;
@@ -321,10 +330,10 @@ function CanvasInner({ projectId }: { projectId: string }) {
             onNodeClick={onNodeClick}
             onEdgeClick={onEdgeClick}
             onPaneClick={onPaneClick}
-            onNodesDelete={onNodesDelete}
-            onEdgesDelete={onEdgesDelete}
+            onBeforeDelete={onBeforeDelete}
             onMoveEnd={onMoveEnd}
-            onNodeDragStop={onNodeDragStop}
+            onNodeDragStart={onNodeDragStart}
+            onSelectionDragStart={onNodeDragStart}
             onDragOver={onDragOver}
             onDrop={onDrop}
             onPaneContextMenu={onPaneContextMenu}

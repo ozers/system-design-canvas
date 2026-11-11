@@ -29,6 +29,12 @@ interface PresentationState {
   index: number;
 }
 
+const MAX_HISTORY = 50;
+
+function snapshot(nodes: SystemNode[], edges: SystemEdge[]): HistoryEntry {
+  return { nodes: structuredClone(nodes), edges: structuredClone(edges) };
+}
+
 const DEFAULT_NODE_WIDTH = 200;
 const DEFAULT_NODE_HEIGHT = 72;
 
@@ -55,9 +61,9 @@ interface CanvasStore {
   pendingEdge: PendingEdge | null;
   setPendingEdge: (pending: PendingEdge | null) => void;
 
-  // Undo/redo
-  history: HistoryEntry[];
-  historyIndex: number;
+  // Undo/redo: snapshots taken before each change (past) and states undone (future).
+  past: HistoryEntry[];
+  future: HistoryEntry[];
 
   // Clipboard
   clipboard: { nodes: SystemNode[]; edges: SystemEdge[] } | null;
@@ -95,6 +101,8 @@ interface CanvasStore {
   updateEdgeData: (edgeId: string, data: Partial<SystemEdgeData>) => void;
   deleteNode: (nodeId: string) => void;
   deleteEdge: (edgeId: string) => void;
+  /** Remove nodes (with their edges) and edges as one undoable step. */
+  removeElements: (nodeIds: string[], edgeIds: string[]) => void;
   reverseEdge: (edgeId: string) => void;
   setViewport: (viewport: Viewport) => void;
   setSelectedNodeId: (id: string | null) => void;
@@ -116,6 +124,7 @@ interface CanvasStore {
   redo: () => void;
   setNodes: (nodes: SystemNode[]) => void;
   setEdges: (edges: SystemEdge[]) => void;
+  /** Record the current nodes/edges as an undo step. Call right before changing them. */
   pushHistory: () => void;
 }
 
@@ -126,8 +135,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   selectedNodeId: null,
   selectedEdgeId: null,
   projectId: null,
-  history: [],
-  historyIndex: -1,
+  past: [],
+  future: [],
   clipboard: null,
   pendingEdge: null,
   setPendingEdge: (pending) => set({ pendingEdge: pending }),
@@ -160,8 +169,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       viewport,
       selectedNodeId: null,
       selectedEdgeId: null,
-      history: [{ nodes, edges }],
-      historyIndex: 0,
+      past: [],
+      future: [],
       presentation: { active: false, index: 0 },
       saveStatus: 'saved',
     });
@@ -219,21 +228,32 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     }));
   },
 
-  deleteNode: (nodeId) => {
-    get().pushHistory();
-    set((state) => ({
-      nodes: state.nodes.filter((n) => n.id !== nodeId),
-      edges: state.edges.filter((e) => e.source !== nodeId && e.target !== nodeId),
-      selectedNodeId: state.selectedNodeId === nodeId ? null : state.selectedNodeId,
-    }));
-  },
+  deleteNode: (nodeId) => get().removeElements([nodeId], []),
 
-  deleteEdge: (edgeId) => {
+  deleteEdge: (edgeId) => get().removeElements([], [edgeId]),
+
+  removeElements: (nodeIds, edgeIds) => {
+    const nodeSet = new Set(nodeIds);
+    const edgeSet = new Set(edgeIds);
+    const { nodes, edges } = get();
+    const removesNode = nodes.some((n) => nodeSet.has(n.id));
+    const removesEdge = edges.some((e) => edgeSet.has(e.id) || nodeSet.has(e.source) || nodeSet.has(e.target));
+    if (!removesNode && !removesEdge) return;
     get().pushHistory();
-    set((state) => ({
-      edges: state.edges.filter((e) => e.id !== edgeId),
-      selectedEdgeId: state.selectedEdgeId === edgeId ? null : state.selectedEdgeId,
-    }));
+    set((state) => {
+      const remainingEdges = state.edges.filter(
+        (e) => !edgeSet.has(e.id) && !nodeSet.has(e.source) && !nodeSet.has(e.target)
+      );
+      return {
+        nodes: state.nodes.filter((n) => !nodeSet.has(n.id)),
+        edges: remainingEdges,
+        selectedNodeId: state.selectedNodeId && nodeSet.has(state.selectedNodeId) ? null : state.selectedNodeId,
+        selectedEdgeId:
+          state.selectedEdgeId && !remainingEdges.some((e) => e.id === state.selectedEdgeId)
+            ? null
+            : state.selectedEdgeId,
+      };
+    });
   },
 
   reverseEdge: (edgeId) => {
@@ -318,22 +338,11 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   },
 
   deleteSelection: () => {
-    const { nodes } = get();
-    const selectedIds = new Set(
-      nodes.filter((n) => n.selected).map((n) => n.id)
+    const { nodes, edges } = get();
+    get().removeElements(
+      nodes.filter((n) => n.selected).map((n) => n.id),
+      edges.filter((e) => e.selected).map((e) => e.id)
     );
-    if (selectedIds.size === 0) return;
-    get().pushHistory();
-    set((state) => ({
-      nodes: state.nodes.filter((n) => !selectedIds.has(n.id)),
-      edges: state.edges.filter(
-        (e) => !selectedIds.has(e.source) && !selectedIds.has(e.target)
-      ),
-      selectedNodeId:
-        state.selectedNodeId && selectedIds.has(state.selectedNodeId)
-          ? null
-          : state.selectedNodeId,
-    }));
   },
 
   selectAll: () => {
@@ -471,33 +480,33 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   },
 
   pushHistory: () => {
-    const { nodes, edges, history, historyIndex } = get();
-    const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push({ nodes: structuredClone(nodes), edges: structuredClone(edges) });
-    // Keep max 50 entries
-    if (newHistory.length > 50) newHistory.shift();
-    set({ history: newHistory, historyIndex: newHistory.length - 1 });
+    const { nodes, edges, past } = get();
+    const next = [...past, snapshot(nodes, edges)];
+    if (next.length > MAX_HISTORY) next.shift();
+    set({ past: next, future: [] });
   },
 
   undo: () => {
-    const { historyIndex, history } = get();
-    if (historyIndex <= 0) return;
-    const prev = history[historyIndex - 1];
+    const { past, future, nodes, edges } = get();
+    const prev = past[past.length - 1];
+    if (!prev) return;
     set({
       nodes: prev.nodes,
       edges: prev.edges,
-      historyIndex: historyIndex - 1,
+      past: past.slice(0, -1),
+      future: [...future, snapshot(nodes, edges)],
     });
   },
 
   redo: () => {
-    const { historyIndex, history } = get();
-    if (historyIndex >= history.length - 1) return;
-    const next = history[historyIndex + 1];
+    const { past, future, nodes, edges } = get();
+    const next = future[future.length - 1];
+    if (!next) return;
     set({
       nodes: next.nodes,
       edges: next.edges,
-      historyIndex: historyIndex + 1,
+      past: [...past, snapshot(nodes, edges)],
+      future: future.slice(0, -1),
     });
   },
 }));

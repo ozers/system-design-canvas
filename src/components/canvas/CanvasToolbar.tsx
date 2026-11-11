@@ -149,8 +149,8 @@ function MoreMenu({
   onClear: () => void;
 }) {
   const hasNodes = useCanvasStore((s) => s.nodes.length > 0);
-  const canUndo = useCanvasStore((s) => s.historyIndex > 0);
-  const canRedo = useCanvasStore((s) => s.historyIndex < s.history.length - 1);
+  const canUndo = useCanvasStore((s) => s.past.length > 0);
+  const canRedo = useCanvasStore((s) => s.future.length > 0);
   const selectedCount = useCanvasStore((s) => s.nodes.reduce((n, node) => n + (node.selected ? 1 : 0), 0));
   const allLocked = useCanvasStore((s) => {
     const selected = s.nodes.filter((n) => n.selected);
@@ -262,8 +262,8 @@ export function CanvasToolbar() {
   const addAtCenter = useAddNodeAtCenter();
   const { autoLayout, importJson, importCompose } = useToolbarActions();
   const hasNodes = useCanvasStore((s) => s.nodes.length > 0);
-  const canUndo = useCanvasStore((s) => s.historyIndex > 0);
-  const canRedo = useCanvasStore((s) => s.historyIndex < s.history.length - 1);
+  const canUndo = useCanvasStore((s) => s.past.length > 0);
+  const canRedo = useCanvasStore((s) => s.future.length > 0);
   const undo = useCanvasStore((s) => s.undo);
   const redo = useCanvasStore((s) => s.redo);
   const setLibraryCollapsed = useCanvasStore((s) => s.setLibraryCollapsed);
