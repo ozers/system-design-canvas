@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import { CORE_SCHEMA, load, mergeTag } from 'js-yaml';
 import type { SystemNode, SystemEdge, SystemNodeType, SystemEdgeType } from '@/types';
 import { getLayoutedElements } from './auto-layout';
 
@@ -143,8 +143,13 @@ interface ComposeFile {
 
 // --- Main parser ---
 
+// js-yaml 5's default schema has no `<<` merge key; Compose files use it with anchors
+// (`<<: *defaults`), so enable it explicitly.
+const COMPOSE_SCHEMA = CORE_SCHEMA.withTags(mergeTag);
+
 export function parseDockerCompose(content: string): { nodes: SystemNode[]; edges: SystemEdge[] } {
-  const doc = yaml.load(content) as ComposeFile;
+  // js-yaml 5 throws on an empty document; keep the friendly error for that case.
+  const doc = (content.trim() ? load(content, { schema: COMPOSE_SCHEMA }) : undefined) as ComposeFile | undefined;
 
   if (!doc?.services || typeof doc.services !== 'object') {
     throw new Error('Invalid Docker Compose file: no services found');
