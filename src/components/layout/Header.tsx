@@ -13,7 +13,7 @@ import {
 import { SimpleTooltip } from '@/components/ui/tooltip';
 import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
-import { DASHBOARD_PATH } from '@/lib/routes';
+import { LANDING_PATH } from '@/lib/routes';
 
 interface HeaderProps {
   /** Dashboard only: passing either handler shows the Import menu. */
@@ -32,7 +32,7 @@ export function Header({ onImportJson, onImportDockerCompose, containerClassName
     <header className="sticky top-0 z-30 border-b border-line bg-[color-mix(in_oklch,var(--bg)_88%,transparent)] backdrop-blur-md">
       <div className={cn('mx-auto flex h-14 w-full max-w-[1128px] items-center gap-3 px-6', containerClassName)}>
         <Link
-          href={DASHBOARD_PATH}
+          href={LANDING_PATH}
           className="focus-ring -ml-1 flex items-center gap-2.5 rounded-full py-1 pr-2 pl-1 text-[14px] font-semibold whitespace-nowrap text-ink"
         >
           <span className="inline-flex size-[26px] items-center justify-center rounded-[8px] bg-accent text-accent-ink">

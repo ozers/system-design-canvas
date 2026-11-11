@@ -7,22 +7,16 @@ import { Button } from '@/components/ui/button';
 import { GithubIcon } from '@/components/ui/github-icon';
 import { SimpleTooltip } from '@/components/ui/tooltip';
 import { useTheme } from '@/hooks/useTheme';
-import { DASHBOARD_PATH } from '@/lib/routes';
-import { STORAGE_KEY } from '@/lib/storage';
+import { DASHBOARD_PATH, LANDING_PATH } from '@/lib/routes';
+import { countStoredProjects } from '@/lib/storage';
 import { GITHUB_URL } from './links';
 
 /** Number of saved projects on this device, read without loading the project store. */
 function useSavedProjectCount() {
   const [count, setCount] = useState(0);
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      const projects = raw ? (JSON.parse(raw) as { projects?: unknown }).projects : null;
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is only readable after mount
-      if (Array.isArray(projects)) setCount(projects.length);
-    } catch {
-      // Unreadable storage: show the plain link.
-    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is only readable after mount
+    setCount(countStoredProjects());
   }, []);
   return count;
 }
@@ -35,7 +29,7 @@ export function LandingNav() {
     <header className="sticky top-0 z-30 border-b border-line bg-[color-mix(in_oklch,var(--bg)_88%,transparent)] backdrop-blur-md">
       <div className="mx-auto flex h-14 w-full max-w-[1128px] items-center gap-3 px-4 sm:px-6">
         <Link
-          href="/"
+          href={LANDING_PATH}
           className="focus-ring -ml-1 flex items-center gap-2.5 rounded-full py-1 pr-2 pl-1 text-[14px] font-semibold whitespace-nowrap text-ink"
         >
           <span className="inline-flex size-[26px] items-center justify-center rounded-[8px] bg-ink text-paper">

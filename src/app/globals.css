@@ -327,3 +327,8 @@
     transform: none;
   }
 }
+
+/* Hidden while ReturningVisitorRedirect decides whether to open the dashboard. */
+html[data-returning] .landing-root {
+  visibility: hidden;
+}

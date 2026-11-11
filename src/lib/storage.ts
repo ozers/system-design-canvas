@@ -149,6 +149,23 @@ export function saveAppData(data: AppData): boolean {
   }
 }
 
+/**
+ * Number of valid saved projects, read without side effects (no backup, quarantine or
+ * migration). Missing, unreadable or corrupt storage counts as 0; never throws.
+ */
+export function countStoredProjects(): number {
+  if (typeof window === 'undefined') return 0;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return 0;
+    const projects = (JSON.parse(raw) as { projects?: unknown } | null)?.projects;
+    if (!Array.isArray(projects)) return 0;
+    return projects.filter((p) => ProjectSchema.safeParse(p).success).length;
+  } catch {
+    return 0;
+  }
+}
+
 /** Approximate size of the stored app data in bytes. */
 export function getStorageSize(): number {
   if (typeof window === 'undefined') return 0;
