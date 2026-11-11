@@ -1,7 +1,23 @@
 import { HardDrive, KeyRound, ServerOff } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { CF_BEACON_TOKEN, CF_WEB_ANALYTICS_DOCS_URL } from '@/lib/site';
 import { SectionHeading } from './SectionHeading';
 
-const POINTS = [
+// Built with a Cloudflare Web Analytics token, the page loads its beacon; say so.
+const BACKEND_BODY: ReactNode = CF_BEACON_TOKEN ? (
+  <>
+    The app is static files. No database, no API calls with your diagrams in them. Page views are
+    counted with{' '}
+    <a href={CF_WEB_ANALYTICS_DOCS_URL} target="_blank" rel="noreferrer" className="underline underline-offset-2 hover:text-ink">
+      Cloudflare Web Analytics
+    </a>
+    : no cookies, no personal data.
+  </>
+) : (
+  'The app is static files. No database, no analytics, no API calls with your diagrams in them.'
+);
+
+const POINTS: { icon: typeof KeyRound; title: string; body: ReactNode }[] = [
   {
     icon: KeyRound,
     title: 'No account',
@@ -15,7 +31,7 @@ const POINTS = [
   {
     icon: ServerOff,
     title: 'No backend at all',
-    body: 'The app is static files. No database, no analytics, no API calls with your diagrams in them.',
+    body: BACKEND_BODY,
   },
 ];
 
