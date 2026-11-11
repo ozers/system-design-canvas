@@ -1,6 +1,6 @@
 import LZString from 'lz-string';
 import { describe, expect, it } from 'vitest';
-import { decodeCanvasFromUrl, encodeCanvasToUrl } from './share';
+import { decodeCanvasFromUrl, encodeCanvasToUrl, readSharePayload, sharedPath } from './share';
 import type { SystemEdge, SystemNode } from '@/types';
 
 const nodes: SystemNode[] = [
@@ -18,8 +18,8 @@ function encode(payload: unknown): string {
 
 describe('decodeCanvasFromUrl', () => {
   it('round-trips a valid canvas', () => {
-    const url = encodeCanvasToUrl(nodes, edges);
-    const d = new URL(url, 'http://x').searchParams.get('d')!;
+    const url = new URL(encodeCanvasToUrl(nodes, edges), 'http://x');
+    const d = readSharePayload(url.search, url.hash)!.encoded;
     const result = decodeCanvasFromUrl(d);
     expect(result).toEqual({ ok: true, nodes, edges });
   });
@@ -59,5 +59,44 @@ describe('decodeCanvasFromUrl', () => {
     ['duplicate node ids', { n: [nodes[0], nodes[0]], e: [] }],
   ])('rejects %s as invalid', (_, payload) => {
     expect(decodeCanvasFromUrl(encode(payload))).toEqual({ ok: false, error: 'invalid' });
+  });
+});
+
+describe('share links keep the payload out of the request (G2)', () => {
+  it('puts the payload in the fragment, not the query', () => {
+    const url = new URL(encodeCanvasToUrl(nodes, edges), 'http://x');
+    expect(url.pathname).toBe('/canvas/shared');
+    expect(url.search).toBe('');
+    expect(url.hash.startsWith('#d=')).toBe(true);
+  });
+
+  it('reads the fragment form', () => {
+    expect(readSharePayload('', '#d=abc$+-')).toEqual({ encoded: 'abc$+-', legacy: false });
+  });
+
+  it('still reads old ?d= links and flags them as legacy', () => {
+    const d = encode({ n: nodes, e: edges });
+    const found = readSharePayload(`?d=${d}`, '');
+    expect(found).toEqual({ encoded: d, legacy: true });
+    expect(decodeCanvasFromUrl(found!.encoded)).toEqual({ ok: true, nodes, edges });
+    expect(readSharePayload(`?x=1&d=${d}`, '')?.encoded).toBe(d);
+  });
+
+  it('prefers the fragment when both are present', () => {
+    expect(readSharePayload('?d=old', '#d=new')).toEqual({ encoded: 'new', legacy: false });
+  });
+
+  it('undoes percent-escapes added by chat apps', () => {
+    expect(readSharePayload('', '#d=ab%24c')?.encoded).toBe('ab$c');
+  });
+
+  it('returns null without a payload', () => {
+    expect(readSharePayload('', '')).toBeNull();
+    expect(readSharePayload('?d=', '#')).toBeNull();
+    expect(readSharePayload('?other=1', '#x=2')).toBeNull();
+  });
+
+  it('builds the fragment path used when rewriting old links', () => {
+    expect(sharedPath('abc')).toBe('/canvas/shared#d=abc');
   });
 });

@@ -1,30 +1,49 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { FolderInput, Unlink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MinimapThumb } from '@/components/shared/MinimapThumb';
 import { countComponents, createProjectWithContent } from '@/components/project/project-io';
-import { decodeCanvasFromUrl } from '@/lib/share';
+import { decodeCanvasFromUrl, readSharePayload, sharedPath } from '@/lib/share';
 import { formatBytes, plural } from '@/lib/utils';
 import { useProjectStore } from '@/stores/useProjectStore';
 
 import { canvasPath, DASHBOARD_PATH } from '@/lib/routes';
+
+/** Payload from the address bar; undefined until read on the client (the fragment never reaches the server). */
+function useSharePayload(): string | null | undefined {
+  const [data, setData] = useState<string | null | undefined>(undefined);
+  useEffect(() => {
+    const read = () => {
+      const found = readSharePayload(window.location.search, window.location.hash);
+      // Old ?d= links: keep them working, but move the payload into the fragment.
+      if (found?.legacy) window.history.replaceState(window.history.state, '', sharedPath(found.encoded));
+      setData(found?.encoded ?? null);
+    };
+    read();
+    window.addEventListener('hashchange', read);
+    return () => window.removeEventListener('hashchange', read);
+  }, []);
+  return data;
+}
+
 function SharedCanvasInner() {
-  const searchParams = useSearchParams();
   const router = useRouter();
   const loaded = useProjectStore((s) => s.loaded);
   const loadProjects = useProjectStore((s) => s.loadProjects);
   const [opening, setOpening] = useState(false);
 
-  const data = searchParams.get('d');
+  const data = useSharePayload();
   const result = useMemo(() => (data ? decodeCanvasFromUrl(data) : null), [data]);
 
   useEffect(() => {
     if (!loaded) loadProjects();
   }, [loaded, loadProjects]);
+
+  if (data === undefined) return null;
 
   if (!result || !result.ok || !data) {
     const invalid = result?.ok === false && result.error === 'invalid';
@@ -98,9 +117,7 @@ function SharedCanvasInner() {
 export default function SharedCanvasPage() {
   return (
     <div className="dot-grid flex min-h-screen items-center justify-center p-6">
-      <Suspense fallback={null}>
-        <SharedCanvasInner />
-      </Suspense>
+      <SharedCanvasInner />
     </div>
   );
 }

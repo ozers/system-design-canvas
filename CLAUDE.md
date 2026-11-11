@@ -59,7 +59,7 @@ npm run deploy:cloudflare  # next build + wrangler deploy (static assets from ./
 5. **Dialogs read open state from the store**; global shortcuts are registered only in `useKeyboardShortcuts`. The shortcut list lives in `src/lib/shortcuts.ts` and feeds both the `?` modal and ⌘K.
 6. **localStorage**: Single key, versioned schema, ~5MB limit = ~100 projects comfortably.
 7. **Export**: html-to-image renders the diagram bounds of `.react-flow` → PNG/SVG (1–3×, optional transparent background); JSON and Mermaid are text exports.
-8. **Share links** encode `{n: nodes, e: edges}` with LZString in `/canvas/shared?d=…`; the landing page previews before saving a copy.
+8. **Share links** encode `{n: nodes, e: edges}` with LZString in the fragment, `/canvas/shared#d=…`, so the design never reaches the server; old `?d=…` links still open and are rewritten to the fragment form. The landing page previews before saving a copy.
 9. **Hosting**: `next build` writes `./out`. Vercel deploys from Git (`vercel.json` 308-redirects legacy `/canvas/:id` → `/canvas?id=:id`); Cloudflare serves `./out` as Workers static assets (`wrangler.jsonc`).
 10. **Host migration**: localStorage is per origin. When `NEXT_PUBLIC_MIGRATE_TO` is set, `MigrationBanner` on the dashboard sends projects + `sdc.settings` + onboarding flag to `<target>/import#<lz payload>`; `/import` merges them with `mergeProjects` (keeps ids, skips existing). Payloads over ~1.9 MB fall back to a JSON backup download. Logic lives in `lib/migration.ts`.
 

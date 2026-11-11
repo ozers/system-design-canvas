@@ -96,7 +96,7 @@ const FEATURES: Feature[] = [
     body: 'The whole design is compressed into the URL. Whoever opens it previews the diagram and saves their own copy; no server sees it.',
     demo: (
       <div className="truncate rounded-full border border-line px-3 py-1 font-mono text-[11px] text-ink-3">
-        /canvas/shared?d=N4IgLgpgtgxgFghgJwQ…
+        /canvas/shared#d=N4IgLgpgtgxgFghgJwQ…
       </div>
     ),
   },
