@@ -21,7 +21,7 @@ interface PendingEdge {
 
 export type SaveStatus = 'saved' | 'saving' | 'error';
 
-export interface PresentationState {
+interface PresentationState {
   active: boolean;
   /** Index into the BFS node order computed by the presentation overlay. */
   index: number;

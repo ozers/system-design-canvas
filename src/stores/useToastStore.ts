@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import type { LucideIcon } from 'lucide-react';
 
-export type ToastTone = 'ok' | 'neutral' | 'danger';
+type ToastTone = 'ok' | 'neutral' | 'danger';
 
-export interface ToastAction {
+interface ToastAction {
   label: string;
   onClick: () => void;
 }

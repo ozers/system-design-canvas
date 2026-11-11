@@ -9,7 +9,7 @@ export function encodeCanvasToUrl(nodes: SystemNode[], edges: SystemEdge[]): str
 }
 
 /** Share links above this size may be truncated by chat apps and some browsers. */
-export const SHARE_URL_WARN_BYTES = 8 * 1024;
+const SHARE_URL_WARN_BYTES = 8 * 1024;
 
 /** Byte length of a share URL (UTF-8). */
 export function getShareStats(url: string): { bytes: number; tooLong: boolean } {
@@ -22,7 +22,7 @@ export function getShareStats(url: string): { bytes: number; tooLong: boolean } 
  * - `unreadable`: not decompressible JSON (usually cut off when pasted);
  * - `invalid`: readable, but the nodes/edges don't match the canvas schema.
  */
-export type ShareDecodeError = 'unreadable' | 'invalid';
+type ShareDecodeError = 'unreadable' | 'invalid';
 
 export type ShareDecodeResult =
   | { ok: true; nodes: SystemNode[]; edges: SystemEdge[] }

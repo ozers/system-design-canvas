@@ -30,7 +30,7 @@ export function getFitViewOptions(duration?: number): FitViewOptions {
 }
 
 /** "⌘D" on Apple, "Ctrl+D" elsewhere — for menu shortcut hints. */
-export function formatShortcut(keys: string[]) {
+function formatShortcut(keys: string[]) {
   const mapped = keys.map(formatKey);
   return mapped.join(mapped.some((k) => k.length > 1) ? '+' : '');
 }

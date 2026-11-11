@@ -29,12 +29,12 @@ export function pickFile(accept: string): Promise<File | null> {
 }
 
 /** Parse an exported file, a project backup, or an API endpoint list. Throws a readable error. */
-export function parseProjectsFile(text: string): JsonImportItem[] {
+function parseProjectsFile(text: string): JsonImportItem[] {
   return parseJsonImport(text);
 }
 
 /** Danger toast with a Details action that reveals the underlying message. */
-export function showReadError(fileName: string, error: unknown) {
+function showReadError(fileName: string, error: unknown) {
   const detail = error instanceof Error ? error.message : String(error);
   toast({
     message: `Couldn't read ${fileName}`,

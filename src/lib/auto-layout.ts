@@ -21,7 +21,7 @@ function isLayoutNode(node: SystemNode) {
  * different rows connect bottom → top and nodes on the same row connect side to side
  * (left-to-right layouts mirror this).
  */
-export function facingSides(source: Rect, target: Rect, direction: Direction = 'TB'): [Side, Side] {
+function facingSides(source: Rect, target: Rect, direction: Direction = 'TB'): [Side, Side] {
   const below = target.y + target.height / 2 >= source.y + source.height / 2;
   const right = target.x + target.width / 2 >= source.x + source.width / 2;
   const verticalGap = below ? target.y - (source.y + source.height) : source.y - (target.y + target.height);
@@ -34,7 +34,7 @@ export function facingSides(source: Rect, target: Rect, direction: Direction = '
 }
 
 /** Re-point every edge between component nodes to the sides that face each other. */
-export function orientEdgeHandles(nodes: SystemNode[], edges: SystemEdge[], direction: Direction = 'TB'): SystemEdge[] {
+function orientEdgeHandles(nodes: SystemNode[], edges: SystemEdge[], direction: Direction = 'TB'): SystemEdge[] {
   const rects = new Map(nodes.filter(isLayoutNode).map((n) => [n.id, getNodeRect(n)]));
   return edges.map((edge) => {
     const source = rects.get(edge.source);

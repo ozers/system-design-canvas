@@ -21,7 +21,7 @@ export type ShortcutId =
   | 'paste'
   | 'reverse-edge';
 
-export interface Shortcut {
+interface Shortcut {
   id: ShortcutId;
   label: string;
   keys: string[];

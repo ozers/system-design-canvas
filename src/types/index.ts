@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import type { Node, Edge, Viewport } from '@xyflow/react';
+import type { Node, Edge } from '@xyflow/react';
 
 // Node types
-export const SYSTEM_NODE_TYPES = [
+const SYSTEM_NODE_TYPES = [
   'service',
   'database',
   'cache',
@@ -50,7 +50,7 @@ export const NODE_ENVIRONMENTS = ['production', 'staging', 'development'] as con
 export type NodeEnvironment = (typeof NODE_ENVIRONMENTS)[number];
 
 // Node data
-export const SystemNodeDataSchema = z.object({
+const SystemNodeDataSchema = z.object({
   label: z.string(),
   nodeType: z.enum(SYSTEM_NODE_TYPES),
   description: z.string().optional(),
@@ -69,7 +69,7 @@ export const SystemNodeDataSchema = z.object({
 export type SystemNodeData = z.infer<typeof SystemNodeDataSchema>;
 
 // Edge data
-export const SystemEdgeDataSchema = z.object({
+const SystemEdgeDataSchema = z.object({
   edgeType: z.enum(SYSTEM_EDGE_TYPES),
   label: z.string().optional(),
   description: z.string().optional(),
@@ -86,14 +86,14 @@ export type SystemEdge = Edge<SystemEdgeData>;
 
 // Share-link payload: React Flow nodes/edges whose data must match the schemas above.
 // Other React Flow fields (style, parentId, width, ...) pass through unchanged.
-export const SharedNodeSchema = z.looseObject({
+const SharedNodeSchema = z.looseObject({
   id: z.string(),
   type: z.string().optional(),
   position: z.object({ x: z.number(), y: z.number() }),
   data: SystemNodeDataSchema,
 });
 
-export const SharedEdgeSchema = z.looseObject({
+const SharedEdgeSchema = z.looseObject({
   id: z.string(),
   source: z.string(),
   target: z.string(),
@@ -131,6 +131,3 @@ export const AppDataSchema = z.object({
 });
 
 export type AppData = z.infer<typeof AppDataSchema>;
-
-// Default viewport
-export const DEFAULT_VIEWPORT: Viewport = { x: 0, y: 0, zoom: 1 };

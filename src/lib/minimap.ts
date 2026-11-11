@@ -1,7 +1,7 @@
-import type { SystemNode, SystemEdge, SystemNodeData } from '@/types';
+import type { SystemNode, SystemNodeData } from '@/types';
 
 /** Soft fills for minimap and thumbnail rects, per node type. */
-export const MINIMAP_COLORS: Record<string, string> = {
+const MINIMAP_COLORS: Record<string, string> = {
   service: '#93bbfd',
   database: '#86e0a5',
   cache: '#fcd68d',
@@ -84,5 +84,3 @@ export function getHandlePoint(rect: Rect, handle: string | null | undefined): {
       return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
   }
 }
-
-export type { SystemEdge };

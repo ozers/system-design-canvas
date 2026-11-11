@@ -32,7 +32,7 @@ export type NodeCategory =
   | 'Observability'
   | 'Other';
 
-export const NODE_CATEGORIES: NodeCategory[] = [
+const NODE_CATEGORIES: NodeCategory[] = [
   'Client & Edge',
   'Compute',
   'Data',

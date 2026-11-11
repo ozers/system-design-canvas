@@ -3,7 +3,7 @@
 import { useCallback, useSyncExternalStore } from 'react';
 
 /** Subscribe to a CSS media query. Server render assumes no match. */
-export function useMediaQuery(query: string) {
+function useMediaQuery(query: string) {
   const subscribe = useCallback(
     (listener: () => void) => {
       const mq = window.matchMedia(query);
