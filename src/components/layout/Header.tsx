@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { Boxes, Container, FileJson, Github, Moon, Settings2, Sun, Upload } from 'lucide-react';
+import { Boxes, Container, FileJson, Moon, Settings2, Sun, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { GithubIcon } from '@/components/ui/github-icon';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -87,7 +88,7 @@ export function Header({ onImportJson, onImportDockerCompose, containerClassName
                 rel="noreferrer"
                 aria-label="GitHub"
               >
-                <Github className="size-4" />
+                <GithubIcon className="size-4" />
               </a>
             </Button>
           </SimpleTooltip>

@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Boxes, Download, Github, Trash2, Upload } from 'lucide-react';
+import { ArrowLeft, Boxes, Download, Trash2, Upload } from 'lucide-react';
 import packageJson from '../../../package.json';
 import { Header } from '@/components/layout/Header';
 import { ConfirmDialog } from '@/components/project/ConfirmDialog';
 import { exportAllProjectsFile, importFile, pickFile } from '@/components/project/project-io';
 import { Button } from '@/components/ui/button';
+import { GithubIcon } from '@/components/ui/github-icon';
 import { Segmented } from '@/components/ui/segmented';
 import { Switch } from '@/components/ui/switch';
 import { useTheme } from '@/hooks/useTheme';
@@ -213,7 +214,7 @@ export default function SettingsPage() {
               </div>
               <Button variant="secondary" asChild className="ml-auto">
                 <a href="https://github.com/ozers/system-design-canvas" target="_blank" rel="noreferrer">
-                  <Github />
+                  <GithubIcon />
                   GitHub
                 </a>
               </Button>
