@@ -1,0 +1,33 @@
+name: Feature request
+description: Suggest an idea, a component or connection type, or a template
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        System Design Canvas is opinionated on purpose: a focused set of building blocks, no backend, no sign-up.
+        Ideas that keep it that way are the easiest to accept.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The problem or use case, not just the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How it could work. Sketches and screenshots welcome.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives or workarounds
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I'd like to open a pull request for this
