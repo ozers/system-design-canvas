@@ -8,6 +8,7 @@ import {
   type Viewport,
 } from '@xyflow/react';
 import type { SystemNode, SystemEdge, SystemNodeData, SystemEdgeData } from '@/types';
+import { withHandleRole } from '@/lib/connection';
 
 interface HistoryEntry {
   nodes: SystemNode[];
@@ -39,12 +40,6 @@ function nodeSize(node: SystemNode) {
   };
 }
 
-/** Swap a handle id's role, keeping its side: "bottom-source" → "bottom-target". */
-function flipHandle(handle: string | null | undefined, role: 'source' | 'target') {
-  if (!handle) return handle;
-  const side = handle.split('-')[0];
-  return `${side}-${role}`;
-}
 
 interface CanvasStore {
   // State
@@ -249,8 +244,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
               ...e,
               source: e.target,
               target: e.source,
-              sourceHandle: flipHandle(e.targetHandle, 'source'),
-              targetHandle: flipHandle(e.sourceHandle, 'target'),
+              sourceHandle: withHandleRole(e.targetHandle, 'source'),
+              targetHandle: withHandleRole(e.sourceHandle, 'target'),
             }
           : e
       ),

@@ -13,6 +13,7 @@ import {
   useReactFlow,
   useStore,
   type OnConnect,
+  type OnConnectStart,
   type OnEdgesChange,
   type OnNodesChange,
   type OnReconnect,
@@ -35,6 +36,7 @@ import { useAutoSave } from '@/hooks/useAutoSave';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useIsNarrow } from '@/hooks/useMediaQuery';
 import { createSystemNode } from '@/lib/node-factory';
+import { normalizeConnection } from '@/lib/connection';
 import { getMinimapColor } from '@/lib/minimap';
 import { computeIssues, ValidationWarningsContext } from '@/lib/validation';
 import { cn } from '@/lib/utils';
@@ -97,6 +99,8 @@ function CanvasInner({ projectId }: { projectId: string }) {
   const presenting = presentation.active;
 
   const connectEndPos = useRef<{ x: number; y: number } | null>(null);
+  /** Node the current connection drag started on; edges always point away from it. */
+  const connectStartNodeId = useRef<string | null>(null);
   const edgeReconnectSuccessful = useRef(true);
 
   const { screenToFlowPosition, fitView } = useReactFlow();
@@ -219,9 +223,13 @@ function CanvasInner({ projectId }: { projectId: string }) {
 
   const onNodeDragStop = useCallback(() => pushHistory(), [pushHistory]);
 
+  const onConnectStart: OnConnectStart = useCallback((_, { nodeId }) => {
+    connectStartNodeId.current = nodeId;
+  }, []);
+
   const handleConnect: OnConnect = useCallback(
     (connection) => {
-      onConnect(connection);
+      onConnect(normalizeConnection(connection, connectStartNodeId.current));
       if (!connectEndPos.current) return;
       const latest = useCanvasStore.getState().edges;
       const newEdge = latest[latest.length - 1];
@@ -245,7 +253,9 @@ function CanvasInner({ projectId }: { projectId: string }) {
     (oldEdge, newConnection) => {
       edgeReconnectSuccessful.current = true;
       pushHistory();
-      setEdges(reconnectEdge(oldEdge, newConnection, useCanvasStore.getState().edges) as SystemEdgeModel[]);
+      // Reconnecting keeps the edge's direction; only the handle roles need fixing.
+      const connection = normalizeConnection(newConnection, null);
+      setEdges(reconnectEdge(oldEdge, connection, useCanvasStore.getState().edges) as SystemEdgeModel[]);
     },
     [pushHistory, setEdges]
   );
@@ -302,6 +312,7 @@ function CanvasInner({ projectId }: { projectId: string }) {
             edges={flowEdges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
+            onConnectStart={onConnectStart}
             onConnect={handleConnect}
             onConnectEnd={onConnectEnd}
             onReconnect={onReconnect}

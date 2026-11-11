@@ -58,6 +58,9 @@ function SystemEdgeComponent({
   });
 
   const isSelected = !!selected || isStoreSelected;
+  const stroke = isSelected ? 'var(--accent)' : edgeStroke(config.color);
+  // Per-edge marker so the arrowhead follows the edge's own (theme-mixed) color.
+  const arrowId = `sdc-arrow-${id}`;
   const label = data?.label || config.label;
   const meta = [data?.latency, data?.dataFormat, data?.throughput].filter(Boolean).join(' · ');
 
@@ -78,16 +81,30 @@ function SystemEdgeComponent({
 
   return (
     <>
+      <defs>
+        <marker
+          id={arrowId}
+          viewBox="0 0 10 10"
+          refX="9"
+          refY="5"
+          markerWidth="9"
+          markerHeight="9"
+          markerUnits="userSpaceOnUse"
+          orient="auto"
+        >
+          <path d="M1,1.5 L9,5 L1,8.5 Z" style={{ fill: stroke, stroke, strokeWidth: 1, strokeLinejoin: 'round' }} />
+        </marker>
+      </defs>
       <BaseEdge
         id={id}
         path={edgePath}
         markerStart={markerStart}
-        markerEnd={markerEnd}
+        markerEnd={markerEnd ?? `url(#${arrowId})`}
         interactionWidth={interactionWidth}
         className={edgeAnimationClass(config)}
         style={{
           ...style,
-          stroke: isSelected ? 'var(--accent)' : edgeStroke(config.color),
+          stroke,
           strokeWidth: isSelected ? 2.5 : 1.75,
           strokeLinecap: 'round',
           strokeDasharray: config.strokeDasharray,
