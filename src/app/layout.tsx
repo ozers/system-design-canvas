@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,12 +14,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const siteUrl = "https://system-design-canvas-one.vercel.app";
+const siteUrl = SITE_URL;
 const title = "System Design Canvas — Visual System Architecture Tool";
 const description =
-  "Free, open-source tool for designing system architectures visually. " +
-  "Drag-and-drop services, databases, queues, caches, and more. " +
-  "9 templates, dark mode, export to PNG/SVG/Mermaid. No sign-up, runs 100% in the browser.";
+  "Free, open-source architecture canvas for backend engineers. " +
+  "Services, databases, queues, caches and the protocols between them; 9 templates, design checks, " +
+  "presentation mode, docker-compose import, PNG/SVG/Mermaid export. No sign-up, runs 100% in the browser.";
 
 export const metadata: Metadata = {
   title: {
@@ -50,7 +51,7 @@ export const metadata: Metadata = {
     siteName: "System Design Canvas",
     images: [
       {
-        url: `${siteUrl}/screenshots/canvas-light.png`,
+        url: "/screenshots/canvas-light.png",
         width: 2880,
         height: 1800,
         alt: "System Design Canvas — Serverless Fullstack architecture diagram",
@@ -62,7 +63,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title,
     description,
-    images: [`${siteUrl}/screenshots/canvas-light.png`],
+    images: ["/screenshots/canvas-light.png"],
   },
   metadataBase: new URL(siteUrl),
   robots: {

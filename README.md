@@ -9,7 +9,7 @@
 [![React Flow](https://img.shields.io/badge/React_Flow-12-ff0072)](https://reactflow.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6)](https://typescriptlang.org)
 
-[**Live Demo**](https://system-design-canvas-one.vercel.app)
+[**Live Demo**](https://system-design-canvas.ozersubasi-dev.workers.dev)
 
 A free, open-source visual tool for sketching system architectures.
 Drop components, wire them together, see your design take shape — all in the browser.
