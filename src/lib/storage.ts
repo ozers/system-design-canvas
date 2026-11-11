@@ -1,6 +1,6 @@
 import { AppDataSchema, ProjectSchema, type AppData, type Project } from '@/types';
 
-const STORAGE_KEY = 'system-design-canvas';
+export const STORAGE_KEY = 'system-design-canvas';
 /** Raw stored value as it was before a load had to drop or reset anything. */
 export const BACKUP_KEY = 'system-design-canvas.backup';
 /** Projects that failed validation, kept verbatim so they can be recovered by hand. */

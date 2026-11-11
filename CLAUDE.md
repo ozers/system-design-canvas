@@ -10,6 +10,7 @@ System Design Canvas is an opinionated canvas tool for software engineers to thi
 npm run dev          # Dev server with Turbopack
 npm run build        # Production build
 npm run lint         # ESLint
+npm test             # Vitest (lib/ unit tests)
 npm run deploy:cloudflare  # next build + wrangler deploy (static assets from ./out)
 ```
 
@@ -19,9 +20,9 @@ npm run deploy:cloudflare  # next build + wrangler deploy (static assets from ./
 - @xyflow/react v12 (canvas engine)
 - Zustand (state management)
 - Tailwind CSS v4 + shadcn/ui (Radix primitives, restyled)
-- html-to-image (PNG/SVG export), lz-string (share links), js-yaml (docker-compose import), dagre (auto-layout)
+- html-to-image (PNG/SVG export), lz-string (share links), js-yaml 5 (docker-compose import; `<<` merge key enabled explicitly), dagre 3 (auto-layout)
 - Zod (localStorage data validation)
-- lucide-react (icons), Geist + Geist Mono (fonts)
+- lucide-react 1.x (icons; no brand icons — GitHub mark is `ui/github-icon.tsx`), Geist + Geist Mono (fonts)
 - No backend, no auth, no database — hosted as static files on Vercel and Cloudflare Workers
 
 ## Design System ("Studio")
@@ -41,7 +42,7 @@ npm run deploy:cloudflare  # next build + wrangler deploy (static assets from ./
 - User settings persist separately under `sdc.settings` (rehydrated client-side in `Providers`)
 - Auto-save: debounced 500ms + beforeunload; `saveStatus` is `saved | saving | error` (retries every 3s)
 - Path alias: `@/*` → `./src/*`
-- **Static export**: no dynamic route segments, route handlers, `headers()`/`cookies()` or server-only features. Pass ids as query params and build links with `canvasPath(id)` from `lib/routes.ts` (`/canvas?id=…`).
+- **Static export**: no dynamic route segments, route handlers, `headers()`/`cookies()` or server-only features. Pass ids as query params and build links with `canvasPath(id)` from `lib/routes.ts` (`/canvas?id=…`). `/` is the marketing landing; the dashboard lives at `/projects` — link to it with `DASHBOARD_PATH`, never `"/"`.
 
 ### State Management
 - **useProjectStore** — project CRUD (loadProjects, createProject, deleteProject, restoreProject, renameProject, duplicateProject, importProject(s), mergeProjects, clearAllProjects, saveProject → boolean)
@@ -132,7 +133,9 @@ vercel.json               # Legacy route redirects
 src/
   app/
     layout.tsx              # Root layout, fonts, theme head script, Providers
-    page.tsx                # Dashboard
+    page.tsx                # Landing page (static; hero renders a live template with the real node/edge components)
+    projects/page.tsx       # Dashboard (DASHBOARD_PATH)
+    sitemap.ts, robots.ts   # Static (force-static) SEO files; canonical URL in lib/site.ts
     globals.css             # Tailwind + token mapping, motion, React Flow overrides
     settings/page.tsx       # Settings (appearance, canvas, data, about)
     canvas/
@@ -172,6 +175,7 @@ src/
       EdgeEditor.tsx        # Floating connection editor panel / drawer
       edge-registry.ts
     project/                # Dashboard: list, cards, template grid, modals, import, MigrationBanner
+    landing/                # Landing sections: LandingNav, Hero + HeroCanvas (lazy React Flow), BuildingBlocks, Features, LocalFirst, Footer
     shared/MinimapThumb.tsx # SVG thumbnail of a design
     ui/                     # Design-system primitives (see Design System)
   stores/
@@ -180,7 +184,8 @@ src/
     useAutoSave.ts, useKeyboardShortcuts.ts, useTheme.ts, useMediaQuery.ts
   lib/
     storage.ts              # localStorage read/write/migrate
-    routes.ts               # canvasPath(id)
+    routes.ts               # canvasPath(id), DASHBOARD_PATH (/projects)
+    site.ts                 # SITE_URL (canonical host, Cloudflare)
     migration.ts            # Move projects between origins (URL-hash payload)
     export.ts               # PNG/SVG/JSON export, clipboard
     share.ts                # Share URL encode/decode

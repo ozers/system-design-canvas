@@ -248,3 +248,82 @@
   background: color-mix(in oklch, var(--paper) 85%, transparent);
   backdrop-filter: blur(6px);
 }
+
+/* ── Landing ────────────────────────────────────────── */
+@keyframes landing-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes hero-node-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
+.landing-rise {
+  animation: landing-rise 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* Soft accent wash behind the hero; quieter in dark mode. */
+.landing-glow {
+  background: radial-gradient(
+    60% 70% at 50% 0%,
+    color-mix(in oklch, var(--accent-soft) 70%, transparent),
+    transparent 70%
+  );
+}
+[data-theme="dark"] .landing-glow {
+  background: radial-gradient(
+    60% 70% at 50% 0%,
+    color-mix(in oklch, var(--accent-soft) 45%, transparent),
+    transparent 70%
+  );
+}
+
+.landing-card {
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+.landing-card:hover {
+  border-color: var(--ink-3);
+  box-shadow: var(--shadow);
+  transform: translateY(-2px);
+}
+
+/* Hero canvas: nodes rise in one by one (each has its own --d), then edges and labels fade in. */
+.hero-flow .react-flow__node > * {
+  animation: hero-node-in 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+.hero-flow .react-flow__edges,
+.hero-flow .react-flow__edgelabel-renderer {
+  animation: fade-in 500ms ease-out both;
+  animation-delay: var(--edges-at, 600ms);
+}
+.hero-flow .react-flow__attribution {
+  background: transparent;
+}
+/* Read-only preview: edge labels and paths don't open the protocol picker. */
+.hero-flow .react-flow__edge,
+.hero-flow .react-flow__edgelabel-renderer * {
+  pointer-events: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-rise,
+  .hero-flow .react-flow__node > *,
+  .hero-flow .react-flow__edges,
+  .hero-flow .react-flow__edgelabel-renderer {
+    animation: none;
+  }
+  .landing-card,
+  .landing-card:hover {
+    transition: none;
+    transform: none;
+  }
+}
