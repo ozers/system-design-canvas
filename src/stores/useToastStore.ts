@@ -5,7 +5,10 @@ type ToastTone = 'ok' | 'neutral' | 'danger';
 
 interface ToastAction {
   label: string;
-  onClick: () => void;
+  /** Runs before the toast is dismissed. */
+  onClick?: () => void;
+  /** Renders the action as a link opened in a new tab. */
+  href?: string;
 }
 
 export interface Toast {
@@ -16,6 +19,8 @@ export interface Toast {
   action?: ToastAction;
   /** Auto-dismiss delay in ms (default 3000). Paused while hovered. */
   duration: number;
+  /** Shows a close button. */
+  dismissible?: boolean;
 }
 
 export type ToastInput = Omit<Toast, 'id' | 'tone' | 'duration'> & {

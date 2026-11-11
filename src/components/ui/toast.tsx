@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Check, TriangleAlert, Info } from 'lucide-react';
+import { Check, TriangleAlert, Info, X } from 'lucide-react';
 import { useToastStore, type Toast } from '@/stores/useToastStore';
 import { cn } from '@/lib/utils';
 
@@ -12,6 +12,9 @@ const TONE_COLOR: Record<Toast['tone'], string> = {
 };
 
 const TONE_ICON = { ok: Check, neutral: Info, danger: TriangleAlert };
+
+const ACTION_CLASS =
+  'inline-flex h-7 shrink-0 items-center rounded-full bg-line-2 px-2.5 text-[12px] font-medium text-ink outline-none transition-colors hover:bg-line focus-visible:shadow-[0_0_0_2px_var(--accent-soft)]';
 
 function ToastItem({ toast }: { toast: Toast }) {
   const dismiss = useToastStore((s) => s.dismiss);
@@ -40,19 +43,42 @@ function ToastItem({ toast }: { toast: Toast }) {
     >
       <Icon className={cn('size-3.5 shrink-0', TONE_COLOR[toast.tone])} />
       <span className="truncate font-medium">{toast.message}</span>
-      {toast.action ? (
+      {toast.action?.href ? (
+        <a
+          href={toast.action.href}
+          target="_blank"
+          rel="noreferrer"
+          onClick={() => {
+            toast.action?.onClick?.();
+            dismiss(toast.id);
+          }}
+          className={ACTION_CLASS}
+        >
+          {toast.action.label}
+        </a>
+      ) : toast.action ? (
         <button
           type="button"
           onClick={() => {
-            toast.action?.onClick();
+            toast.action?.onClick?.();
             dismiss(toast.id);
           }}
-          className="h-7 shrink-0 rounded-full bg-line-2 px-2.5 text-[12px] font-medium text-ink outline-none transition-colors hover:bg-line focus-visible:shadow-[0_0_0_2px_var(--accent-soft)]"
+          className={ACTION_CLASS}
         >
           {toast.action.label}
         </button>
       ) : (
-        <span className="w-1.5" />
+        !toast.dismissible && <span className="w-1.5" />
+      )}
+      {toast.dismissible && (
+        <button
+          type="button"
+          onClick={() => dismiss(toast.id)}
+          aria-label="Dismiss"
+          className="inline-flex size-7 shrink-0 items-center justify-center rounded-full text-ink-3 outline-none transition-colors hover:bg-line-2 hover:text-ink focus-visible:shadow-[0_0_0_2px_var(--accent-soft)]"
+        >
+          <X className="size-3.5" />
+        </button>
       )}
     </div>
   );

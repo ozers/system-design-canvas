@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Copy, Download } from 'lucide-react';
+import { Copy, Download, Star } from 'lucide-react';
+import { GITHUB_URL } from '@/components/landing/links';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogCloseButton, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Segmented } from '@/components/ui/segmented';
@@ -21,6 +22,19 @@ import {
 } from '@/lib/export';
 import { exportToMermaid } from '@/lib/mermaid';
 import { downloadFile } from '@/lib/utils';
+import { claimStarPrompt } from '@/lib/star-prompt';
+
+/** After the first successful export on this device, ask once for a GitHub star. */
+function promptStarOnce() {
+  if (!claimStarPrompt()) return;
+  toast({
+    message: 'Useful? Star it on GitHub',
+    icon: Star,
+    action: { label: 'Open GitHub', href: GITHUB_URL },
+    dismissible: true,
+    duration: 12000,
+  });
+}
 
 type ExportFormat = 'png' | 'svg' | 'json' | 'mermaid';
 type Scale = '1' | '2' | '3';
@@ -118,6 +132,7 @@ function ExportBody({ onClose }: { onClose: () => void }) {
         return;
       }
       toast({ message: `Exported ${filename}.${format}`, icon: Download });
+      promptStarOnce();
       onClose();
     });
 
@@ -139,6 +154,7 @@ function ExportBody({ onClose }: { onClose: () => void }) {
       downloadFile(`${filename}.mmd`, new Blob([text], { type: 'text/plain' }));
       toast({ message: `Exported ${filename}.mmd`, icon: Download });
     }
+    promptStarOnce();
   };
 
   const copyText = async () => {
