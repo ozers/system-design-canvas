@@ -148,6 +148,7 @@ On Windows and Linux use `Ctrl` instead of `⌘`.
 npm run dev                 # Dev server with Turbopack
 npm run build               # Static export to ./out
 npm run lint                # ESLint
+npm test                    # Vitest unit tests
 npm run deploy:cloudflare   # Build and deploy ./out to Cloudflare Workers
 ```
 
@@ -169,6 +170,10 @@ NEXT_PUBLIC_MIGRATE_TO=https://your-new-domain.example
 ```
 
 The dashboard then shows a banner. *Move my projects* carries projects and settings to `<new domain>/import` inside the URL hash (never sent to a server), where they are previewed and merged. Unset the variable to turn the banner off; nothing is deleted either way.
+
+## Contributing
+
+Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, project layout and how to add a component type or template; changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
