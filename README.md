@@ -16,7 +16,7 @@ Drop components, wire them together, see your design take shape — all in the b
 
 No sign-up. No servers. No data leaving your machine.
 
-![Demo: start from the Client-Server template, drag a Message Queue from the library, connect it to the API Server, run auto-layout and step through presentation mode](public/screenshots/demo.gif)
+![Demo: start from the Client-Server template, drag a Message Queue from the library, connect it to the API Server, switch the connection to Pub/Sub, run auto-layout and step through presentation mode](public/screenshots/demo.gif)
 
 </div>
 
