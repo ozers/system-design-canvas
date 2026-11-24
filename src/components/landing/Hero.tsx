@@ -2,14 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { ArrowRight, MousePointer2 } from 'lucide-react';
+import { MousePointer2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Segmented } from '@/components/ui/segmented';
-import { createFromTemplate } from '@/components/project/project-io';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { DASHBOARD_PATH, canvasPath } from '@/lib/routes';
+import { OpenCanvasButton } from './OpenCanvasButton';
 import { HERO_TEMPLATES, HERO_TEMPLATE_IDS, type HeroTemplateId } from './hero-templates';
 
 // React Flow is client-only and the heaviest part of the page; the static HTML ships
@@ -27,11 +24,9 @@ function plural(n: number, word: string) {
 }
 
 export function Hero() {
-  const router = useRouter();
   const [templateId, setTemplateId] = useState<HeroTemplateId>('microservices');
   const [autoplay, setAutoplay] = useState(true);
   const [visible, setVisible] = useState(true);
-  const [opening, setOpening] = useState(false);
   const windowRef = useRef<HTMLDivElement>(null);
   const narrow = useMediaQuery('(max-width: 767px)');
   const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
@@ -59,13 +54,6 @@ export function Hero() {
 
   const stopAutoplay = useCallback(() => setAutoplay(false), []);
 
-  const openCanvas = () => {
-    if (opening) return;
-    setOpening(true);
-    const project = createFromTemplate(templateId);
-    router.push(project ? canvasPath(project.id) : DASHBOARD_PATH);
-  };
-
   return (
     <section className="relative overflow-hidden">
       <div aria-hidden className="landing-glow pointer-events-none absolute inset-x-0 top-0 h-[560px]" />
@@ -84,20 +72,17 @@ export function Hero() {
           className="landing-rise mt-4 max-w-[600px] text-[15px] leading-[1.55] text-pretty text-ink-2 sm:text-[16px]"
           style={{ animationDelay: '120ms' }}
         >
-          An opinionated architecture canvas for backend engineers. Services, queues, caches and the
-          protocols between them are the building blocks, not boxes and arrows you style by hand. No sign-up;
-          your designs never leave this device.
+          An architecture canvas for backend engineers that checks the design as you draw: loose
+          components, overloaded databases, missing pieces. Sketch your own system or practise on a classic
+          problem. No sign-up; your designs never leave this device.
         </p>
         <div
           className="landing-rise mt-7 flex flex-wrap items-center justify-center gap-2"
           style={{ animationDelay: '180ms' }}
         >
-          <Button variant="primary" size="md" className="h-10 px-5 text-[14px]" onClick={openCanvas} disabled={opening}>
-            Open the canvas
-            <ArrowRight className="size-4" />
-          </Button>
+          <OpenCanvasButton templateId={templateId} />
           <Button variant="secondary" size="md" className="h-10 px-4 text-[14px]" asChild>
-            <Link href={DASHBOARD_PATH}>Your projects</Link>
+            <a href="#practice">Practice a design</a>
           </Button>
         </div>
         <p className="landing-rise mt-3 text-[12px] text-ink-3" style={{ animationDelay: '220ms' }}>

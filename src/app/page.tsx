@@ -6,6 +6,8 @@ import { Footer } from '@/components/landing/Footer';
 import { Hero } from '@/components/landing/Hero';
 import { LandingNav } from '@/components/landing/LandingNav';
 import { LocalFirst } from '@/components/landing/LocalFirst';
+import { Practice } from '@/components/landing/Practice';
+import { Think } from '@/components/landing/Think';
 import { ReturningVisitorRedirect } from '@/components/landing/ReturningVisitorRedirect';
 
 export const metadata: Metadata = {
@@ -21,8 +23,10 @@ export default function LandingPage() {
       <LandingNav />
       <main>
         <Hero />
-        <BuildingBlocks />
+        <Think />
+        <Practice />
         <Features />
+        <BuildingBlocks />
         <LocalFirst />
         <ClosingCta />
       </main>

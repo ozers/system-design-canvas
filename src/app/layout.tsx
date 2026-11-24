@@ -19,9 +19,9 @@ const geistMono = Geist_Mono({
 const siteUrl = SITE_URL;
 const title = "System Design Canvas — Visual System Architecture Tool";
 const description =
-  "Free, open-source architecture canvas for backend engineers. " +
-  "Services, databases, queues, caches and the protocols between them; 9 templates, design checks, " +
-  "presentation mode, docker-compose import, PNG/SVG/Mermaid export. No sign-up, runs 100% in the browser.";
+  "Free, open-source system design canvas for backend engineers. Draw services, databases, queues and " +
+  "the protocols between them; get design and capacity checks as you work; practise on system design " +
+  "interview problems with a checklist. 9 templates, PNG/SVG/Mermaid export. No sign-up, runs in the browser.";
 
 export const metadata: Metadata = {
   title: {

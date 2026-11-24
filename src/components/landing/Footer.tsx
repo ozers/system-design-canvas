@@ -21,6 +21,9 @@ export function Footer() {
           <Link href="/settings" className="hover:text-ink">
             Settings
           </Link>
+          <a href="/llms.txt" className="font-mono text-[11.5px] hover:text-ink">
+            llms.txt
+          </a>
           <a href={GITHUB_URL} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 hover:text-ink">
             <GithubIcon className="size-3.5" />
             GitHub

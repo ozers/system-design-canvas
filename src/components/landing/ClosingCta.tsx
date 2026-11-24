@@ -1,9 +1,7 @@
-import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GithubIcon } from '@/components/ui/github-icon';
-import { DASHBOARD_PATH } from '@/lib/routes';
 import { GITHUB_URL } from './links';
+import { OpenCanvasButton } from './OpenCanvasButton';
 
 export function ClosingCta() {
   return (
@@ -16,12 +14,7 @@ export function ClosingCta() {
           Free and open source. If it helps you think, a star on GitHub helps other engineers find it.
         </p>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-2">
-          <Button variant="primary" size="md" className="h-10 px-5 text-[14px]" asChild>
-            <Link href={DASHBOARD_PATH}>
-              Start a design
-              <ArrowRight className="size-4" />
-            </Link>
-          </Button>
+          <OpenCanvasButton />
           <Button variant="secondary" size="md" className="h-10 px-4 text-[14px]" asChild>
             <a href={GITHUB_URL} target="_blank" rel="noreferrer">
               <GithubIcon className="size-4" />

@@ -180,7 +180,7 @@ src/
       EdgeEditor.tsx        # Floating connection editor panel / drawer
       edge-registry.ts
     project/                # Dashboard: list, cards, template grid, modals, import, MigrationBanner
-    landing/                # Landing sections: LandingNav, Hero + HeroCanvas (lazy React Flow), BuildingBlocks, Features, LocalFirst, Footer
+    landing/                # Landing, in page order: LandingNav, Hero + HeroCanvas (lazy React Flow), Think (checks / capacity / AI, mock panels), Practice (briefs, #practice), Features (short), BuildingBlocks, LocalFirst, ClosingCta, Footer. OpenCanvasButton is the one primary action
     shared/MinimapThumb.tsx # SVG thumbnail of a design
     ui/                     # Design-system primitives (see Design System)
   stores/
