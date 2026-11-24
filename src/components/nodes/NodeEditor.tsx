@@ -31,6 +31,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { computeCapacity, formatRate, NEAR_CAPACITY, type NodeCapacity } from '@/lib/capacity';
+import { computePathLatency, formatLatency } from '@/lib/latency';
 
 const TYPE_GROUPS = getNodesByCategory().filter((group) => group.category !== 'Other');
 
@@ -120,14 +122,43 @@ function TechStackField({
   );
 }
 
+/** What the capacity fields add up to, or what is still missing to say anything. */
+function CapacityResult({ usage }: { usage: NodeCapacity | undefined }) {
+  const text = 'text-[11.5px] leading-[1.4] text-ink-3';
+  if (usage && usage.utilization !== null && usage.load !== null && usage.limit !== null) {
+    const tone = usage.utilization > 1 ? 'text-danger' : usage.utilization >= NEAR_CAPACITY ? 'text-warn' : 'text-ok';
+    return (
+      <p className={cn(text, 'font-mono')}>
+        {formatRate(usage.load)} of {formatRate(usage.limit)} req/s ·{' '}
+        <span className={cn('font-semibold', tone)}>{Math.round(usage.utilization * 100)}%</span>
+      </p>
+    );
+  }
+  if (usage?.load != null) {
+    return (
+      <p className={text}>
+        <span className="font-mono text-ink-2">{formatRate(usage.load)} req/s</span> comes in. Add a capacity to
+        compare.
+      </p>
+    );
+  }
+  if (usage?.limit != null) {
+    return <p className={text}>Write a throughput on an incoming connection to see the load.</p>;
+  }
+  return <p className={text}>Compared with the throughput written on incoming connections.</p>;
+}
+
 function MoreDetails({
   data,
+  usage,
   onChange,
 }: {
   data: SystemNodeData;
+  usage: NodeCapacity | undefined;
   onChange: (patch: Partial<SystemNodeData>) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  // Open when there are capacity numbers to show, or traffic arriving that a capacity would explain.
+  const [open, setOpen] = useState(() => !!(data.capacity || data.instances || usage?.load != null));
   const [linkLabel, setLinkLabel] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
   const links = data.links ?? [];
@@ -182,9 +213,7 @@ function MoreDetails({
                 />
               </Field>
             </div>
-            <p className="text-[11.5px] leading-[1.4] text-ink-3">
-              Compared with the throughput written on incoming connections.
-            </p>
+            <CapacityResult usage={usage} />
           </div>
 
           <div className="grid gap-1.5">
@@ -323,6 +352,14 @@ function NodeEditorContent({ nodeId, onClose }: { nodeId: string; onClose: () =>
       });
   }, [nodes, edges, nodeId]);
 
+  const usage = useMemo(() => computeCapacity(nodes, edges).get(nodeId), [nodes, edges, nodeId]);
+  const slowest = useMemo(() => {
+    const found = computePathLatency(nodes, edges).get(nodeId);
+    if (!found) return null;
+    const labels = new Map(nodes.map((n) => [n.id, n.data.label || 'Untitled']));
+    return { ...found, names: found.path.map((id) => labels.get(id) ?? 'Untitled') };
+  }, [nodes, edges, nodeId]);
+
   if (!node) return null;
 
   const data = node.data;
@@ -453,7 +490,25 @@ function NodeEditorContent({ nodeId, onClose }: { nodeId: string; onClose: () =>
           )}
         </div>
 
-        <MoreDetails data={data} onChange={update} />
+        {slowest && (
+          <div className="grid gap-1.5">
+            <SectionLabel>Slowest path to here</SectionLabel>
+            <div className="rounded-[9px] bg-line-2 px-2.5 py-2">
+              <div className="font-mono text-[13px] font-medium text-ink">
+                {!slowest.complete && <span className="font-sans text-[12px] font-normal text-ink-3">at least </span>}
+                {formatLatency(slowest.ms)}
+              </div>
+              <div className="mt-0.5 text-[12px] leading-[1.45] text-ink-2">{slowest.names.join(' → ')}</div>
+              <div className="mt-1 text-[11.5px] leading-[1.4] text-ink-3">
+                {slowest.complete
+                  ? 'The latencies on these connections, added up.'
+                  : 'A connection on the way has no latency, so the real figure is higher.'}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <MoreDetails data={data} usage={usage} onChange={update} />
       </PanelBody>
 
       <PanelFooter>

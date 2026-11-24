@@ -39,6 +39,7 @@ It's **opinionated by design**. Instead of a blank canvas with infinite shapes, 
 - **Multi-select actions** — Group, align, duplicate, delete; right-click menus for everything
 - **Design checks** — Flags disconnected components, likely bottlenecks and missing tech stacks as you work
 - **Capacity checks** — Give a component a capacity per instance and an instance count, write a throughput on the connections coming in, and the card shows load against limit (`1.2k / 1k req/s · 120%`). Over 100% is a warning, 80% and up a note. It adds up the numbers you wrote; it does not simulate traffic
+- **Path latency** — Write a latency on the connections and each component shows the slowest request path that reaches it (`77 ms · Client → Load Balancer → API → Database`). Asynchronous hand-offs are not counted
 - **Auto-layout** — One-click arrangement with dagre
 
 **Practice & AI**

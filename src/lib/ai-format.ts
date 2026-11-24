@@ -608,6 +608,8 @@ narration, shown in presentation mode), \`owner\`,
 \`capacity\` (requests per second one instance can take, e.g. "500 req/s") and \`instances\` (a whole number).
 The canvas compares capacity × instances with the \`throughput\` of the edges coming in, so write
 throughput as a request rate ("1.2k req/s", "300/min") when you want that check.
+It also adds up \`latency\` along chains of synchronous edges (rest, grpc, graphql, tcp, db-query) to show
+the slowest path to each node, so write latency as a time ("5 ms", "0.2 s").
 
 Node \`type\` is one of:
 

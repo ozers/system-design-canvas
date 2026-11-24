@@ -13,6 +13,8 @@ import { Kbd } from '@/components/ui/kbd';
 import { Panel, PanelBody, PanelFooter, PanelHeader } from '@/components/ui/panel';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { cn, tint } from '@/lib/utils';
+import { parseRate } from '@/lib/capacity';
+import { isSyncProtocol, parseLatency } from '@/lib/latency';
 
 const DETAILS = [
   { key: 'latency', label: 'Latency', icon: Clock, placeholder: 'e.g. ~50ms' },
@@ -28,6 +30,8 @@ function EdgeEditorContent({ edgeId, onClose }: { edgeId: string; onClose: () =>
   const edge = useCanvasStore((s) => s.edges.find((e) => e.id === edgeId));
   const sourceLabel = useCanvasStore((s) => s.nodes.find((n) => n.id === edge?.source)?.data.label);
   const targetLabel = useCanvasStore((s) => s.nodes.find((n) => n.id === edge?.target)?.data.label);
+  const targetHasCapacity = useCanvasStore((s) => !!s.nodes.find((n) => n.id === edge?.target)?.data.capacity);
+  const setSelectedNodeId = useCanvasStore((s) => s.setSelectedNodeId);
   const updateEdgeData = useCanvasStore((s) => s.updateEdgeData);
   const deleteEdge = useCanvasStore((s) => s.deleteEdge);
   const reverseEdge = useCanvasStore((s) => s.reverseEdge);
@@ -37,6 +41,31 @@ function EdgeEditorContent({ edgeId, onClose }: { edgeId: string; onClose: () =>
   const data: SystemEdgeData = edge.data ?? { edgeType: 'rest' };
   const config = EDGE_REGISTRY[data.edgeType] ?? EDGE_REGISTRY.rest;
   const update = (patch: Partial<SystemEdgeData>) => updateEdgeData(edgeId, patch);
+
+  // How the numbers typed below are used elsewhere, so a field that is ignored says so.
+  const notes: React.ReactNode[] = [];
+  if (data.latency?.trim()) {
+    if (parseLatency(data.latency) === null) notes.push('Latency is not read as a time, so it is left out of path totals.');
+    else if (!isSyncProtocol(data.edgeType)) notes.push('An asynchronous hand-off: its latency is not added to request paths.');
+  }
+  if (data.throughput?.trim()) {
+    if (parseRate(data.throughput) === null) {
+      notes.push('Throughput is not read as a request rate, so it is left out of capacity checks.');
+    } else if (!targetHasCapacity) {
+      notes.push(
+        <>
+          <button
+            type="button"
+            onClick={() => setSelectedNodeId(edge.target)}
+            className="rounded-[4px] font-medium text-ink-2 underline underline-offset-2 outline-none hover:text-ink focus-visible:shadow-[0_0_0_3px_var(--accent-soft)]"
+          >
+            Set a capacity on {targetLabel || 'the target'}
+          </button>{' '}
+          to compare it with this throughput.
+        </>
+      );
+    }
+  }
 
   return (
     <>
@@ -118,6 +147,11 @@ function EdgeEditorContent({ edgeId, onClose }: { edgeId: string; onClose: () =>
               </label>
             ))}
           </div>
+          {notes.map((note, i) => (
+            <p key={i} className="text-[11.5px] leading-[1.4] text-ink-3">
+              {note}
+            </p>
+          ))}
         </div>
 
         <button
