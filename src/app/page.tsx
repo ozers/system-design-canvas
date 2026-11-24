@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
 export default function LandingPage() {
   return (
-    <div className="landing-root min-h-screen bg-bg">
+    <div className="landing-root landing-dots min-h-screen bg-bg">
       {/* Returning visitors (saved projects) go to the dashboard; /?home keeps the landing.
           The pre-paint half of this lives in the root layout's <head> (returningVisitorScript). */}
       <ReturningVisitorRedirect />

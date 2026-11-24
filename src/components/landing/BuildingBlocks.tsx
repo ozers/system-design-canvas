@@ -13,7 +13,7 @@ const protocols = Object.entries(EDGE_REGISTRY);
 /** The node and edge registries, shown as the vocabulary of the canvas. */
 export function BuildingBlocks() {
   return (
-    <section className="border-y border-line bg-paper">
+    <section className="landing-dots border-y border-line bg-paper">
       <div className="mx-auto max-w-[1128px] px-4 py-16 sm:px-6 sm:py-24">
         <SectionHeading
           eyebrow="Building blocks"

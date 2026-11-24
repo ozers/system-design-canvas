@@ -17,7 +17,7 @@ export function Practice() {
   };
 
   return (
-    <section id="practice" className="scroll-mt-14 border-y border-line bg-paper">
+    <section id="practice" className="landing-dots scroll-mt-14 border-y border-line bg-paper">
       <div className="mx-auto max-w-[1128px] px-4 py-16 sm:px-6 sm:py-24">
         <SectionHeading eyebrow="Practice" title={`${BRIEFS.length} problems, an empty canvas and a checklist.`}>
           For the week before a system design interview, or for the fun of it. Each brief gives the requirements and the
