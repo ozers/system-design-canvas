@@ -395,7 +395,7 @@ function CanvasInner({ projectId }: { projectId: string }) {
             <NodePalette />
             <CanvasToolbar />
             <SelectionActions />
-            {showValidation && <ValidationPanel issues={issues} editorOpen={editorOpen} />}
+            {showValidation && <ValidationPanel issues={issues} editorOpen={editorOpen} narrow={narrow} />}
             {brief && !(narrow && editorOpen) && (
               <BriefPanel key={brief.id} brief={brief} nodes={nodes} edges={edges} editorOpen={editorOpen} narrow={narrow} />
             )}

@@ -8,8 +8,19 @@ import { Panel } from '@/components/ui/panel';
 import { cn } from '@/lib/utils';
 import type { ValidationIssue } from '@/lib/validation';
 
-/** Top-center design checks, centered in the area left of an open editor panel. */
-export function ValidationPanel({ issues, editorOpen }: { issues: ValidationIssue[]; editorOpen: boolean }) {
+/**
+ * Design checks. Wide screens: top-center, centered in the area left of an open editor panel.
+ * Narrow screens: a short pill at the top left, beside the toolbar, that opens to full width.
+ */
+export function ValidationPanel({
+  issues,
+  editorOpen,
+  narrow = false,
+}: {
+  issues: ValidationIssue[];
+  editorOpen: boolean;
+  narrow?: boolean;
+}) {
   const setSelectedNodeId = useCanvasStore((s) => s.setSelectedNodeId);
   const { setCenter, getInternalNode } = useReactFlow();
   const [expanded, setExpanded] = useState(false);
@@ -21,6 +32,9 @@ export function ValidationPanel({ issues, editorOpen }: { issues: ValidationIssu
   const warnings = issues.filter((i) => i.severity === 'warning').length;
   const infos = issues.length - warnings;
   const counts = [warnings > 0 && `${warnings} warn`, infos > 0 && `${infos} info`].filter(Boolean).join(' · ');
+
+  // Beside the toolbar on a narrow screen there is room for the count only.
+  const compact = narrow && !expanded;
 
   const locate = (nodeId: string) => {
     const node = getInternalNode(nodeId);
@@ -34,16 +48,28 @@ export function ValidationPanel({ issues, editorOpen }: { issues: ValidationIssu
 
   return (
     <Panel
-      className="animate-panel-in absolute top-4 z-10 w-[340px] -translate-x-1/2 overflow-hidden"
-      style={{
-        left: editorOpen ? 'calc((100% - 332px) / 2)' : '50%',
-        maxWidth: editorOpen ? 'calc(100% - 364px)' : 'calc(100% - 32px)',
-      }}
+      className={cn(
+        'animate-panel-in absolute overflow-hidden',
+        narrow
+          ? expanded
+            ? 'top-3 right-3 left-3 z-20'
+            : 'top-3 left-3 z-10'
+          : 'top-4 z-10 w-[340px] -translate-x-1/2'
+      )}
+      style={
+        narrow
+          ? undefined
+          : {
+              left: editorOpen ? 'calc((100% - 332px) / 2)' : '50%',
+              maxWidth: editorOpen ? 'calc(100% - 364px)' : 'calc(100% - 32px)',
+            }
+      }
     >
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
         aria-expanded={expanded}
+        aria-label={compact ? `${issues.length} ${issues.length === 1 ? 'thing' : 'things'} to check` : undefined}
         className="flex h-10 w-full items-center gap-2 pr-3 pl-3.5 text-left text-[13px] font-medium whitespace-nowrap text-ink outline-none focus-visible:bg-line-2"
       >
         {warnings > 0 ? (
@@ -51,11 +77,15 @@ export function ValidationPanel({ issues, editorOpen }: { issues: ValidationIssu
         ) : (
           <Info className="size-[15px] shrink-0 text-ink-3" />
         )}
-        <span className="truncate">
-          {issues.length} {issues.length === 1 ? 'thing' : 'things'} to check
-        </span>
+        {compact ? (
+          <span className="font-mono text-[12px]">{issues.length}</span>
+        ) : (
+          <span className="truncate">
+            {issues.length} {issues.length === 1 ? 'thing' : 'things'} to check
+          </span>
+        )}
         <span className="ml-auto inline-flex items-center gap-1.5">
-          <span className="font-mono text-[11px] text-ink-3">{counts}</span>
+          {!compact && <span className="font-mono text-[11px] text-ink-3">{counts}</span>}
           <ChevronDown
             className={cn('size-3.5 text-ink-3 transition-transform duration-[120ms]', expanded && 'rotate-180')}
           />
