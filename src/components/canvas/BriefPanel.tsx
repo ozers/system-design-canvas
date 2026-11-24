@@ -41,8 +41,10 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 /** Practice brief for the open project: requirements, a live checklist, hints and the reference design. */
 export function BriefPanel({ brief, nodes, edges, editorOpen, narrow }: BriefPanelProps) {
   const { fitView } = useReactFlow();
-  // On a narrow screen the open panel covers the canvas, so it starts open only for the first read.
-  const [open, setOpen] = useState(() => !narrow || nodes.length === 0);
+  // On a narrow screen the open panel covers the canvas, so until the user toggles it, it is open
+  // only while there is nothing on the canvas yet.
+  const [userOpen, setOpen] = useState<boolean | null>(null);
+  const open = userOpen ?? (!narrow || nodes.length === 0);
   const [hints, setHints] = useState(0);
   const [confirming, setConfirming] = useState(false);
 
