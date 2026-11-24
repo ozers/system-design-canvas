@@ -56,6 +56,8 @@ import { OnboardingOverlay } from './OnboardingOverlay';
 import { ShareDialog } from './ShareDialog';
 import { ExportDialog } from './ExportDialog';
 import { AiEditDialog } from './AiEditDialog';
+import { BriefPanel } from './BriefPanel';
+import { getBrief } from '@/lib/briefs';
 import { getFitViewOptions, presentationOrder } from './canvas-helpers';
 
 const nodeTypes = { system: BaseSystemNode, group: GroupNode, note: StickyNote };
@@ -117,6 +119,7 @@ function CanvasInner({ projectId }: { projectId: string }) {
   const loadProjects = useProjectStore((s) => s.loadProjects);
   const loaded = useProjectStore((s) => s.loaded);
   const currentProject = projects.find((p) => p.id === projectId);
+  const brief = getBrief(currentProject?.briefId);
 
   useEffect(() => {
     if (!loaded) loadProjects();
@@ -389,6 +392,9 @@ function CanvasInner({ projectId }: { projectId: string }) {
             <CanvasToolbar />
             <SelectionActions />
             {showValidation && <ValidationPanel issues={issues} editorOpen={editorOpen} />}
+            {brief && !(narrow && editorOpen) && (
+              <BriefPanel key={brief.id} brief={brief} nodes={nodes} edges={edges} editorOpen={editorOpen} narrow={narrow} />
+            )}
             {nodes.length === 0 && <EmptyCanvas offsetLeft={libraryOffset} />}
           </>
         )}

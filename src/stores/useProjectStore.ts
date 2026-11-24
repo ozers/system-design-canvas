@@ -7,7 +7,7 @@ interface ProjectStore {
   lastOpenedProjectId: string | null;
   loaded: boolean;
   loadProjects: () => void;
-  createProject: (name: string, description?: string) => Project;
+  createProject: (name: string, description?: string, briefId?: string) => Project;
   deleteProject: (id: string) => void;
   renameProject: (id: string, name: string) => void;
   duplicateProject: (id: string) => Project | null;
@@ -36,12 +36,13 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     set({ projects: data.projects, lastOpenedProjectId: data.lastOpenedProjectId, loaded: true });
   },
 
-  createProject: (name, description) => {
+  createProject: (name, description, briefId) => {
     const now = new Date().toISOString();
     const project: Project = {
       id: crypto.randomUUID(),
       name,
       description,
+      ...(briefId ? { briefId } : {}),
       createdAt: now,
       updatedAt: now,
       nodes: [],

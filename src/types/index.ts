@@ -110,6 +110,8 @@ export const ProjectSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string().optional(),
+  /** Set when the project was started from a practice brief (`lib/briefs.ts`). */
+  briefId: z.string().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
   nodes: z.array(z.any()),

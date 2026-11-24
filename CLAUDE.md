@@ -52,7 +52,7 @@ npm run deploy:cloudflare  # next build + wrangler deploy (static assets from ./
 - React Flow **controlled mode** — Zustand is the single source of truth
 
 ### Key Architecture Decisions
-1. **Single custom node component**: BaseSystemNode renders all component types. Differences come from node-registry.ts. Groups and sticky notes have their own node types.
+1. **Single custom node component**: BaseSystemNode renders all component types. Cards are 200px wide until the user resizes them (React Flow's `width` prop is the measured size, so the explicit size is read from the node itself); the description is clamped to two lines and read in full in the editor. Differences come from node-registry.ts. Groups and sticky notes have their own node types.
 2. **Single custom edge component**: SystemEdge renders all edge types. Differences come from edge-registry.ts.
 3. **React Flow controlled mode**: Nodes/edges live in Zustand, applyNodeChanges/applyEdgeChanges run inside the store.
 4. **Floating chrome**: library, node/edge editors and validation are floating panels over a full-width canvas; below 900px the library is a bottom sheet and editors are drawers (`useIsNarrow`).
@@ -62,7 +62,8 @@ npm run deploy:cloudflare  # next build + wrangler deploy (static assets from ./
 8. **Share links** encode `{n: nodes, e: edges}` with LZString in the fragment, `/canvas/shared#d=…`, so the design never reaches the server; old `?d=…` links still open and are rewritten to the fragment form. The landing page previews before saving a copy.
 9. **Hosting**: `next build` writes `./out`. Vercel deploys from Git (`vercel.json` 308-redirects legacy `/canvas/:id` → `/canvas?id=:id`); Cloudflare serves `./out` as Workers static assets (`wrangler.jsonc`).
 10. **Edit with AI**: no model is called. `lib/ai-format.ts` turns the canvas into `sdc/design@1` (components + connections, no positions/handles; groups and notes are left out and never touched), builds the prompt, and reads a pasted answer back: nodes match by id (position kept), new ones are placed next to a neighbour, and the whole canvas is laid out again only when most components are new. `public/llms-full.txt` is generated from the same guide (`UPDATE_LLMS=1 npm test`).
-11. **Host migration**: localStorage is per origin. When `NEXT_PUBLIC_MIGRATE_TO` is set, `MigrationBanner` on the dashboard sends projects + `sdc.settings` + onboarding flag to `<target>/import#<lz payload>`; `/import` merges them with `mergeProjects` (keeps ids, skips existing). Payloads over ~1.9 MB fall back to a JSON backup download. Logic lives in `lib/migration.ts`.
+11. **Practice briefs**: a project with `briefId` shows `BriefPanel` on the canvas. Checks are structural only (component types and connections, direction ignored), so the panel calls them a checklist, not a grade. One project per brief: the dashboard `PracticeStrip` reopens it and shows `passed/total`. Every reference design must pass its own checks (tested).
+12. **Host migration**: localStorage is per origin. When `NEXT_PUBLIC_MIGRATE_TO` is set, `MigrationBanner` on the dashboard sends projects + `sdc.settings` + onboarding flag to `<target>/import#<lz payload>`; `/import` merges them with `mergeProjects` (keeps ids, skips existing). Payloads over ~1.9 MB fall back to a JSON backup download. Logic lives in `lib/migration.ts`.
 
 ## Data Model
 
@@ -78,7 +79,7 @@ SystemEdgeType: 'rest' | 'grpc' | 'graphql' | 'websocket' | 'pub-sub' | 'mqtt' |
 
 SystemNodeData { label, nodeType, description?, story?, techStack: string[], status?, environment?, owner?, links? }
 SystemEdgeData { edgeType, label?, description?, latency?, dataFormat?, throughput? }
-Project { id, name, description, createdAt, updatedAt, nodes, edges, viewport }
+Project { id, name, description, briefId?, createdAt, updatedAt, nodes, edges, viewport }
 AppData { version: number, projects: Project[], lastOpenedProjectId }
 ```
 
@@ -165,6 +166,7 @@ src/
       ShareDialog.tsx
       ExportDialog.tsx
       AiEditDialog.tsx      # Edit with AI: copy prompt → paste answer → diff → apply
+      BriefPanel.tsx        # Practice brief: requirements, live checklist, hints, reference
       AddComponentMenu.tsx, canvas-helpers.ts
     nodes/
       BaseSystemNode.tsx    # Single custom node component (all component types)
@@ -193,6 +195,8 @@ src/
     share.ts                # Share URL encode/decode
     mermaid.ts, docker-compose.ts, auto-layout.ts
     ai-format.ts            # sdc/design@1: toDesign, parseDesign, planDesign, buildPrompt, llms-full text
+    briefs.ts               # Practice briefs (pure data; reference designs in sdc/design@1)
+    brief-checks.ts         # evaluateChecks: structural checklist (has / linked / via / clean)
     templates.ts            # Template data (pure data)
     shortcuts.ts            # Shortcut list (modal + command menu)
     validation.ts           # Design checks

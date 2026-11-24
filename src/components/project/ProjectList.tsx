@@ -19,6 +19,8 @@ import { DeleteProjectDialog } from './DeleteProjectDialog';
 import { ProjectCard } from './ProjectCard';
 import { ProjectModal } from './ProjectModal';
 import { TemplateStrip } from './TemplateStrip';
+import { PracticeStrip } from './PracticeStrip';
+import { getBrief } from '@/lib/briefs';
 import { createFromTemplate, exportProjectFile } from './project-io';
 
 import { canvasPath } from '@/lib/routes';
@@ -105,6 +107,18 @@ export function ProjectList() {
     [router]
   );
 
+  // One project per brief: picking a brief again goes back to the design in progress.
+  const handleStartBrief = useCallback(
+    (briefId: string) => {
+      const brief = getBrief(briefId);
+      if (!brief) return;
+      const store = useProjectStore.getState();
+      const project = store.projects.find((p) => p.briefId === briefId) ?? store.createProject(brief.title, brief.summary, briefId);
+      router.push(canvasPath(project.id));
+    },
+    [router]
+  );
+
   const handleModalSubmit = (name: string, description: string) => {
     if (modal?.mode === 'rename') {
       renameProject(modal.project.id, name);
@@ -144,6 +158,10 @@ export function ProjectList() {
 
       <div className="mb-11">
         <TemplateStrip onSelect={handleUseTemplate} defaultExpanded={loaded && projects.length === 0} />
+      </div>
+
+      <div className="mb-11">
+        <PracticeStrip projects={projects} onSelect={handleStartBrief} />
       </div>
 
       {loaded &&
