@@ -1,7 +1,18 @@
 import type { LucideIcon } from 'lucide-react';
-import { FileDown, FileUp, LayoutTemplate, Link2, Presentation, TriangleAlert } from 'lucide-react';
+import {
+  ClipboardList,
+  FileDown,
+  FileUp,
+  Gauge,
+  LayoutTemplate,
+  Link2,
+  Presentation,
+  Sparkles,
+  TriangleAlert,
+} from 'lucide-react';
 import { Kbd } from '@/components/ui/kbd';
 import { Tag } from '@/components/ui/tag';
+import { BRIEFS } from '@/lib/briefs';
 import { TEMPLATES } from '@/lib/templates';
 import { SectionHeading } from './SectionHeading';
 
@@ -47,6 +58,58 @@ const FEATURES: Feature[] = [
           </span>
         </li>
       </ul>
+    ),
+  },
+  {
+    icon: Gauge,
+    title: 'Capacity checks',
+    body: 'Write what one instance can take and how many there are, and the throughput on the connections coming in. The card shows load against limit; nothing is simulated or guessed.',
+    demo: (
+      <div className="grid gap-1.5 font-mono text-[11.5px] text-ink-3">
+        <div className="flex items-center gap-2">
+          <span className="min-w-0 truncate">Orders DB · 1.2k / 1k req/s</span>
+          <span className="ml-auto font-semibold text-danger">120%</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="min-w-0 truncate">Cache · 8.5k / 10k req/s</span>
+          <span className="ml-auto text-warn">85%</span>
+        </div>
+      </div>
+    ),
+  },
+  {
+    icon: ClipboardList,
+    title: `${BRIEFS.length} practice briefs`,
+    body: 'Pick a problem, read the requirements and the numbers to design for, and draw. A checklist follows along; hints and a reference design are there when you are stuck.',
+    demo: (
+      <ul className="grid gap-1.5 text-[12px] text-ink-2">
+        <li className="flex items-center gap-2">
+          <span className="size-3 shrink-0 rounded-full bg-ok" aria-hidden />
+          <span className="min-w-0 truncate">Redirects can be answered from a cache</span>
+        </li>
+        <li className="flex items-center gap-2">
+          <span className="size-3 shrink-0 rounded-full border border-line" aria-hidden />
+          <span className="min-w-0 truncate text-ink">Click counting goes through a queue</span>
+        </li>
+      </ul>
+    ),
+  },
+  {
+    icon: Sparkles,
+    title: 'Edit with AI, your own',
+    body: 'Copy a prompt that holds your design into the assistant you already use, paste the answer back, and review what changes before it lands. This page calls no model.',
+    demo: (
+      <div className="grid gap-1 font-mono text-[11.5px] text-ink-2">
+        <div>
+          <span className="text-ok">+</span> Read replica
+        </div>
+        <div>
+          <span className="text-ok">+</span> API → Read replica · db-query
+        </div>
+        <div>
+          <span className="text-ink-3">~</span> API <span className="text-ink-3">tech</span>
+        </div>
+      </div>
     ),
   },
   {

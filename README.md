@@ -35,10 +35,15 @@ It's **opinionated by design**. Instead of a blank canvas with infinite shapes, 
 - **19 component types** — Services, Databases, Caches, Queues, Load Balancers, CDNs, API Gateways, Serverless Functions, and more — plus groups and sticky notes
 - **9 connection types** — REST, gRPC, GraphQL, WebSocket, Pub/Sub, MQTT, SSE, TCP, DB Query
 - **Component library** — Searchable, collapsible panel; drag onto the canvas or click to add
-- **Node & connection editors** — Name, type, tech stack with suggestions, description, latency / format / throughput, reverse direction
+- **Node & connection editors** — Name, type, tech stack with suggestions, description, capacity and instance count, latency / format / throughput, reverse direction
 - **Multi-select actions** — Group, align, duplicate, delete; right-click menus for everything
 - **Design checks** — Flags disconnected components, likely bottlenecks and missing tech stacks as you work
+- **Capacity checks** — Give a component a capacity per instance and an instance count, write a throughput on the connections coming in, and the card shows load against limit (`1.2k / 1k req/s · 120%`). Over 100% is a warning, 80% and up a note. It adds up the numbers you wrote; it does not simulate traffic
 - **Auto-layout** — One-click arrangement with dagre
+
+**Practice & AI**
+- **Practice briefs** — Six system design problems (URL shortener, rate limiter, chat, home timeline, upload pipeline, notification service), each with requirements, figures to design for, a checklist that updates as you draw, hints and a reference design. The checklist looks at component types and connections, so it is a guide, not a grade
+- **Edit with AI** — Copy a prompt that holds your design into the assistant you already use, paste its answer back, see what would change, then apply it as one undo step. The app calls no model and sends nothing anywhere; the format is documented at [`/llms-full.txt`](public/llms-full.txt)
 
 **Share & present**
 - **⌘K command menu** — Add components, run actions, jump to nodes or projects
