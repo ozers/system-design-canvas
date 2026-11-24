@@ -141,6 +141,69 @@ export function ProjectList() {
     });
   };
 
+  const hasProjects = loaded && projects.length > 0;
+  const recent = (
+    <section aria-labelledby="recent-heading">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <div className="flex items-center gap-1">
+          <h2 id="recent-heading" className="text-[13px] font-medium text-ink-2">
+            Recent
+          </h2>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-7 gap-1.5 px-2.5 text-[12.5px] font-normal">
+                <ArrowUpDown className="size-[13px]" />
+                {SORT_LABEL[sort]}
+                <ChevronDown className="size-[13px] text-ink-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="min-w-[160px]">
+              {(Object.keys(SORT_LABEL) as SortKey[]).map((key) => (
+                <DropdownMenuItem key={key} onSelect={() => setSort(key)}>
+                  {SORT_LABEL[key]}
+                  <Check className={cn('ml-auto text-accent', key !== sort && 'invisible')} />
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <SearchInput
+          ref={searchRef}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setQuery('');
+              e.currentTarget.blur();
+            }
+          }}
+          placeholder="Search projects…"
+          aria-label="Search projects"
+          className="h-8"
+          containerClassName="w-full sm:w-[260px]"
+        />
+      </div>
+
+      {visible.length === 0 ? (
+        <NoResults query={q} onCreate={() => openCreate(q)} />
+      ) : (
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
+          {visible.map((project) => (
+            <ProjectCard
+              key={project.id}
+              project={project}
+              onRename={handleRename}
+              onDuplicate={handleDuplicate}
+              onExport={handleExport}
+              onDelete={handleDelete}
+            />
+          ))}
+          {!q && <NewProjectCard onCreate={() => openCreate()} />}
+        </div>
+      )}
+    </section>
+  );
+
   return (
     <div>
       <div className="mb-10 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
@@ -156,78 +219,18 @@ export function ProjectList() {
         </Button>
       </div>
 
+      {/* Returning users come for their own work, so it leads; with nothing saved yet, the starting points do. */}
+      {hasProjects && <div className="mb-11">{recent}</div>}
+
       <div className="mb-11">
         <TemplateStrip onSelect={handleUseTemplate} defaultExpanded={loaded && projects.length === 0} />
       </div>
 
-      <div className="mb-11">
+      <div className={hasProjects ? undefined : 'mb-11'}>
         <PracticeStrip projects={projects} onSelect={handleStartBrief} />
       </div>
 
-      {loaded &&
-        (projects.length === 0 ? (
-          <EmptyState onCreate={() => openCreate()} />
-        ) : (
-          <section aria-labelledby="recent-heading">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-              <div className="flex items-center gap-1">
-                <h2 id="recent-heading" className="text-[13px] font-medium text-ink-2">
-                  Recent
-                </h2>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-7 gap-1.5 px-2.5 text-[12.5px] font-normal">
-                      <ArrowUpDown className="size-[13px]" />
-                      {SORT_LABEL[sort]}
-                      <ChevronDown className="size-[13px] text-ink-3" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="min-w-[160px]">
-                    {(Object.keys(SORT_LABEL) as SortKey[]).map((key) => (
-                      <DropdownMenuItem key={key} onSelect={() => setSort(key)}>
-                        {SORT_LABEL[key]}
-                        <Check className={cn('ml-auto text-accent', key !== sort && 'invisible')} />
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <SearchInput
-                ref={searchRef}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') {
-                    setQuery('');
-                    e.currentTarget.blur();
-                  }
-                }}
-                placeholder="Search projects…"
-                aria-label="Search projects"
-                className="h-8"
-                containerClassName="w-full sm:w-[260px]"
-              />
-            </div>
-
-            {visible.length === 0 ? (
-              <NoResults query={q} onCreate={() => openCreate(q)} />
-            ) : (
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
-                {visible.map((project) => (
-                  <ProjectCard
-                    key={project.id}
-                    project={project}
-                    onRename={handleRename}
-                    onDuplicate={handleDuplicate}
-                    onExport={handleExport}
-                    onDelete={handleDelete}
-                  />
-                ))}
-                {!q && <NewProjectCard onCreate={() => openCreate()} />}
-              </div>
-            )}
-          </section>
-        ))}
+      {loaded && !hasProjects && <EmptyState onCreate={() => openCreate()} />}
 
       <ProjectModal
         open={!!modal}
