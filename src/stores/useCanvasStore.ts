@@ -80,6 +80,8 @@ interface CanvasStore {
   setExportOpen: (open: boolean) => void;
   shareOpen: boolean;
   setShareOpen: (open: boolean) => void;
+  aiEditOpen: boolean;
+  setAiEditOpen: (open: boolean) => void;
 
   // Presentation mode
   presentation: PresentationState;
@@ -152,6 +154,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   setExportOpen: (exportOpen) => set({ exportOpen }),
   shareOpen: false,
   setShareOpen: (shareOpen) => set({ shareOpen }),
+  aiEditOpen: false,
+  setAiEditOpen: (aiEditOpen) => set({ aiEditOpen }),
 
   presentation: { active: false, index: 0 },
   startPresentation: () => set({ presentation: { active: true, index: 0 }, pendingEdge: null }),

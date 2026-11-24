@@ -1,0 +1,110 @@
+# System Design Canvas: design format
+
+System Design Canvas is a browser canvas for software architecture diagrams. It runs
+entirely in the browser and calls no AI model. To change a design with an AI, open a
+canvas, choose "Edit with AI", copy the prompt, and paste the answer back: the app
+checks it, shows what would change, and applies it only after you confirm.
+
+This page is the format that prompt uses.
+
+## The sdc/design@1 format
+
+A design is one JSON object:
+
+```json
+{
+  "format": "sdc/design@1",
+  "nodes": [
+    {
+      "id": "web",
+      "type": "client",
+      "label": "Web app",
+      "tech": [
+        "React"
+      ]
+    },
+    {
+      "id": "api",
+      "type": "service",
+      "label": "API",
+      "tech": [
+        "Node.js"
+      ],
+      "description": "Handles all public requests."
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "Orders DB",
+      "tech": [
+        "PostgreSQL"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "web",
+      "to": "api",
+      "protocol": "rest",
+      "label": "HTTPS"
+    },
+    {
+      "from": "api",
+      "to": "db",
+      "protocol": "db-query",
+      "latency": "5 ms"
+    }
+  ]
+}
+```
+
+Rules:
+
+- Always return the complete design, not a patch. A node or edge you leave out is deleted.
+- Keep the `id` of every node you keep: the id is how the canvas remembers where the node sits.
+- Give new nodes a short, unique, kebab-case `id`.
+- Do not add positions, sizes, colours or any field not listed here. Layout is automatic.
+- An edge goes `from` one node id `to` another. No edge from a node to itself.
+- At most 200 nodes and 400 edges.
+
+Node fields: `id`, `type`, `label` and `tech` (a list of technology names, may be empty) are required.
+Optional: `description`, `story` (narration for presentation mode), `owner`,
+`status` (operational | degraded | down | maintenance), `environment` (production | staging | development),
+`links` (a list of `{ "label", "url" }`, http(s) or mailto only).
+
+Node `type` is one of:
+
+- `service`: application service
+- `database`: database
+- `cache`: cache
+- `queue`: message queue
+- `load-balancer`: load balancer
+- `client`: browser, mobile app or other caller
+- `cdn`: content delivery network
+- `api-gateway`: API gateway
+- `dns`: DNS
+- `waf`: web application firewall
+- `worker`: background worker
+- `serverless`: serverless function
+- `container-cluster`: container cluster, e.g. Kubernetes
+- `object-storage`: object / blob storage
+- `search-index`: search index
+- `stream`: event stream, e.g. Kafka
+- `scheduler`: scheduler / cron
+- `logging`: log pipeline
+- `monitoring`: metrics and alerting
+
+Edge fields: `from`, `to` and `protocol` are required.
+Optional, all free text: `label`, `description`, `latency`, `dataFormat`, `throughput`.
+
+Edge `protocol` is one of:
+
+- `rest`: REST / plain HTTP
+- `grpc`: gRPC
+- `graphql`: GraphQL
+- `websocket`: WebSocket
+- `pub-sub`: publish / subscribe
+- `mqtt`: MQTT
+- `event-stream`: server-sent events or a stream consumer
+- `tcp`: raw TCP
+- `db-query`: database or cache query

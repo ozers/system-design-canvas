@@ -13,6 +13,7 @@ import {
   MousePointerSquareDashed,
   Plus,
   Redo2,
+  Sparkles,
   SquareDashed,
   StickyNote,
   Trash2,
@@ -205,6 +206,10 @@ function MoreMenu({
           {allLocked ? 'Unlock selection' : 'Lock selection'}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={withStore((s) => s.setAiEditOpen(true))}>
+          <Sparkles />
+          Edit with AI…
+        </DropdownMenuItem>
         <DropdownMenuItem onSelect={onImportJson}>
           <FileJson />
           Import JSON

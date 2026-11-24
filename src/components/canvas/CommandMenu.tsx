@@ -14,6 +14,7 @@ import {
   Search,
   Settings2,
   Share2,
+  Sparkles,
   SunMoon,
   Undo2,
   type LucideIcon,
@@ -182,6 +183,13 @@ function CommandMenuBody({ onClose }: { onClose: () => void }) {
         label: 'Share',
         icon: <ActionIcon icon={Share2} />,
         run: () => store().setShareOpen(true),
+      },
+      {
+        id: 'action-ai-edit',
+        group: 'Actions',
+        label: 'Edit with AI…',
+        icon: <ActionIcon icon={Sparkles} />,
+        run: () => store().setAiEditOpen(true),
       },
       {
         id: 'action-auto-layout',

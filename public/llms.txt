@@ -1,0 +1,12 @@
+# System Design Canvas
+
+> A browser canvas for thinking about, planning and drawing software architecture. No account, no backend: designs stay in the browser's localStorage. The app calls no AI model.
+
+## For AI assistants
+
+- [Design format](https://system-design-canvas.ozersubasi-dev.workers.dev/llms-full.txt): the `sdc/design@1` JSON format. A user copies a prompt from "Edit with AI" on a canvas, and pastes your answer back; the app checks it, shows what would change, and applies it after they confirm.
+
+## Pages
+
+- [Home](https://system-design-canvas.ozersubasi-dev.workers.dev/): what the tool does
+- [Projects](https://system-design-canvas.ozersubasi-dev.workers.dev/projects): the user's designs and the starting templates

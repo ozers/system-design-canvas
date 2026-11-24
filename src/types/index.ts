@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { Node, Edge } from '@xyflow/react';
 
 // Node types
-const SYSTEM_NODE_TYPES = [
+export const SYSTEM_NODE_TYPES = [
   'service',
   'database',
   'cache',

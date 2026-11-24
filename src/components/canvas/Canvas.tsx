@@ -55,6 +55,7 @@ import { ShortcutsDialog } from './ShortcutsDialog';
 import { OnboardingOverlay } from './OnboardingOverlay';
 import { ShareDialog } from './ShareDialog';
 import { ExportDialog } from './ExportDialog';
+import { AiEditDialog } from './AiEditDialog';
 import { getFitViewOptions, presentationOrder } from './canvas-helpers';
 
 const nodeTypes = { system: BaseSystemNode, group: GroupNode, note: StickyNote };
@@ -406,6 +407,7 @@ function CanvasInner({ projectId }: { projectId: string }) {
         <OnboardingOverlay />
         <ShareDialog />
         <ExportDialog />
+        <AiEditDialog />
       </div>
     </div>
   );

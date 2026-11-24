@@ -46,7 +46,7 @@ npm run deploy:cloudflare  # next build + wrangler deploy (static assets from ./
 
 ### State Management
 - **useProjectStore** — project CRUD (loadProjects, createProject, deleteProject, restoreProject, renameProject, duplicateProject, importProject(s), mergeProjects, clearAllProjects, saveProject → boolean)
-- **useCanvasStore** — active canvas (nodes, edges, viewport, undo/redo, selection) plus canvas chrome state (libraryCollapsed, command menu / shortcuts / export / share dialogs, presentation `{active, index}`) and actions (duplicateNodes, groupSelection, alignSelection, toggleLock, bringToFront, reverseEdge, clearCanvas)
+- **useCanvasStore** — active canvas (nodes, edges, viewport, undo/redo, selection) plus canvas chrome state (libraryCollapsed, command menu / shortcuts / export / share / AI edit dialogs, presentation `{active, index}`) and actions (duplicateNodes, groupSelection, alignSelection, toggleLock, bringToFront, reverseEdge, clearCanvas)
 - **useSettingsStore** — theme (light/dark/system), snap, minimap, validation, animatedEdges
 - **useToastStore** — `toast({ message, tone, icon, action })`, bottom-right stack of max 3
 - React Flow **controlled mode** — Zustand is the single source of truth
@@ -61,7 +61,8 @@ npm run deploy:cloudflare  # next build + wrangler deploy (static assets from ./
 7. **Export**: html-to-image renders the diagram bounds of `.react-flow` → PNG/SVG (1–3×, optional transparent background); JSON and Mermaid are text exports.
 8. **Share links** encode `{n: nodes, e: edges}` with LZString in the fragment, `/canvas/shared#d=…`, so the design never reaches the server; old `?d=…` links still open and are rewritten to the fragment form. The landing page previews before saving a copy.
 9. **Hosting**: `next build` writes `./out`. Vercel deploys from Git (`vercel.json` 308-redirects legacy `/canvas/:id` → `/canvas?id=:id`); Cloudflare serves `./out` as Workers static assets (`wrangler.jsonc`).
-10. **Host migration**: localStorage is per origin. When `NEXT_PUBLIC_MIGRATE_TO` is set, `MigrationBanner` on the dashboard sends projects + `sdc.settings` + onboarding flag to `<target>/import#<lz payload>`; `/import` merges them with `mergeProjects` (keeps ids, skips existing). Payloads over ~1.9 MB fall back to a JSON backup download. Logic lives in `lib/migration.ts`.
+10. **Edit with AI**: no model is called. `lib/ai-format.ts` turns the canvas into `sdc/design@1` (components + connections, no positions/handles; groups and notes are left out and never touched), builds the prompt, and reads a pasted answer back: nodes match by id (position kept), new ones are placed next to a neighbour, and the whole canvas is laid out again only when most components are new. `public/llms-full.txt` is generated from the same guide (`UPDATE_LLMS=1 npm test`).
+11. **Host migration**: localStorage is per origin. When `NEXT_PUBLIC_MIGRATE_TO` is set, `MigrationBanner` on the dashboard sends projects + `sdc.settings` + onboarding flag to `<target>/import#<lz payload>`; `/import` merges them with `mergeProjects` (keeps ids, skips existing). Payloads over ~1.9 MB fall back to a JSON backup download. Logic lives in `lib/migration.ts`.
 
 ## Data Model
 
@@ -163,6 +164,7 @@ src/
       OnboardingOverlay.tsx
       ShareDialog.tsx
       ExportDialog.tsx
+      AiEditDialog.tsx      # Edit with AI: copy prompt → paste answer → diff → apply
       AddComponentMenu.tsx, canvas-helpers.ts
     nodes/
       BaseSystemNode.tsx    # Single custom node component (all component types)
@@ -190,6 +192,7 @@ src/
     export.ts               # PNG/SVG/JSON export, clipboard
     share.ts                # Share URL encode/decode
     mermaid.ts, docker-compose.ts, auto-layout.ts
+    ai-format.ts            # sdc/design@1: toDesign, parseDesign, planDesign, buildPrompt, llms-full text
     templates.ts            # Template data (pure data)
     shortcuts.ts            # Shortcut list (modal + command menu)
     validation.ts           # Design checks

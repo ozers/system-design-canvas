@@ -34,7 +34,7 @@ function facingSides(source: Rect, target: Rect, direction: Direction = 'TB'): [
 }
 
 /** Re-point every edge between component nodes to the sides that face each other. */
-function orientEdgeHandles(nodes: SystemNode[], edges: SystemEdge[], direction: Direction = 'TB'): SystemEdge[] {
+export function orientEdgeHandles(nodes: SystemNode[], edges: SystemEdge[], direction: Direction = 'TB'): SystemEdge[] {
   const rects = new Map(nodes.filter(isLayoutNode).map((n) => [n.id, getNodeRect(n)]));
   return edges.map((edge) => {
     const source = rects.get(edge.source);
