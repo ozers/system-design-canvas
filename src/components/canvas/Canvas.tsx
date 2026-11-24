@@ -41,6 +41,7 @@ import { normalizeConnection } from '@/lib/connection';
 import { createConnectMenuTracker, pointerPosition } from '@/lib/connect-menu';
 import { getMinimapColor } from '@/lib/minimap';
 import { computeIssues, ValidationWarningsContext } from '@/lib/validation';
+import { CapacityContext, computeCapacity } from '@/lib/capacity';
 import { cn } from '@/lib/utils';
 import type { SystemNode, SystemEdge as SystemEdgeModel, SystemNodeType } from '@/types';
 import { CanvasToolbar } from './CanvasToolbar';
@@ -148,6 +149,7 @@ function CanvasInner({ projectId }: { projectId: string }) {
   const editorOpen = !presenting && (nodeEditorOpen || edgeEditorOpen);
 
   const issues = useMemo(() => computeIssues(nodes, edges), [nodes, edges]);
+  const capacity = useMemo(() => computeCapacity(nodes, edges), [nodes, edges]);
   const validationActive = validationEnabled && !presenting;
   // Stable identity while the set of warned nodes is unchanged, so nodes don't re-render on every drag frame.
   const warningKey = validationActive
@@ -327,6 +329,7 @@ function CanvasInner({ projectId }: { projectId: string }) {
     <div className="flex h-dvh w-screen flex-col bg-bg">
       {!presenting && <CanvasHeader projectId={projectId} projectName={currentProject?.name} />}
       <div className={cn('relative flex-1 overflow-hidden', !animatedEdges && 'edges-static')}>
+        <CapacityContext.Provider value={capacity}>
         <ValidationWarningsContext.Provider value={warningNodeIds}>
           <ReactFlow<SystemNode, SystemEdgeModel>
             nodes={flowNodes}
@@ -385,6 +388,7 @@ function CanvasInner({ projectId }: { projectId: string }) {
             )}
           </ReactFlow>
         </ValidationWarningsContext.Provider>
+        </CapacityContext.Provider>
 
         {!presenting && (
           <>

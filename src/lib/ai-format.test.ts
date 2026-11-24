@@ -162,6 +162,17 @@ describe('planDesign', () => {
     expect(plan.edges.find((e) => e.id === 'e1')).toBe(edges[0]);
   });
 
+  it('carries capacity and instances both ways', () => {
+    const design = parsed(JSON.stringify({
+      nodes: [{ id: 'db', type: 'database', label: 'DB', tech: [], capacity: '500 req/s', instances: '3' }, { id: 'x', type: 'service', label: 'X', tech: [], instances: 0 }],
+    }));
+    expect(design.nodes[0]).toMatchObject({ capacity: '500 req/s', instances: 3 });
+    expect(design.nodes[1]).not.toHaveProperty('instances');
+    const plan = planDesign(design, [], []);
+    expect(plan.nodes[0].data).toMatchObject({ capacity: '500 req/s', instances: 3 });
+    expect(toDesign(plan.nodes, plan.edges).nodes[0]).toMatchObject({ capacity: '500 req/s', instances: 3 });
+  });
+
   it('removes what the design leaves out', () => {
     const design = base();
     design.nodes = design.nodes.filter((n) => n.id !== 'db');

@@ -60,6 +60,9 @@ const SystemNodeDataSchema = z.object({
   status: z.enum(NODE_STATUSES).optional(),
   environment: z.enum(NODE_ENVIRONMENTS).optional(),
   owner: z.string().optional(),
+  /** Requests per second one instance can take, as typed (e.g. "500 req/s"). Read by lib/capacity.ts. */
+  capacity: z.string().optional(),
+  instances: z.number().optional(),
   links: z.array(z.object({
     label: z.string(),
     url: z.string(),

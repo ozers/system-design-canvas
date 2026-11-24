@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react';
 import type { SystemNode, SystemEdge, SystemNodeData } from '@/types';
+import { computeCapacity, formatRate, NEAR_CAPACITY } from './capacity';
 
 export interface ValidationIssue {
   id: string;
@@ -18,6 +19,7 @@ export function computeIssues(nodes: SystemNode[], edges: SystemEdge[]): Validat
   const issues: ValidationIssue[] = [];
   const systemNodes = nodes.filter((n) => n.type === 'system');
 
+  const capacity = computeCapacity(nodes, edges);
   const edgeCounts = new Map<string, number>();
   const incoming = new Set<string>();
   const outgoing = new Set<string>();
@@ -41,6 +43,15 @@ export function computeIssues(nodes: SystemNode[], edges: SystemEdge[]): Validat
     }
     if (TECH_REQUIRED.has(data.nodeType) && data.techStack.length === 0) {
       issues.push({ id: `no-tech-${n.id}`, nodeId: n.id, nodeLabel: label, severity: 'info', message: 'has no tech stack specified' });
+    }
+    const usage = capacity.get(n.id);
+    if (usage && usage.utilization !== null && usage.load !== null && usage.limit !== null) {
+      const figures = `${formatRate(usage.load)} of ${formatRate(usage.limit)} req/s`;
+      if (usage.utilization > 1) {
+        issues.push({ id: `over-capacity-${n.id}`, nodeId: n.id, nodeLabel: label, severity: 'warning', message: `is over capacity: ${figures}` });
+      } else if (usage.utilization >= NEAR_CAPACITY) {
+        issues.push({ id: `near-capacity-${n.id}`, nodeId: n.id, nodeLabel: label, severity: 'info', message: `is at ${Math.round(usage.utilization * 100)}% of capacity (${figures})` });
+      }
     }
     if (data.nodeType === 'database' && outgoing.has(n.id) && !incoming.has(n.id)) {
       issues.push({ id: `db-no-read-${n.id}`, nodeId: n.id, nodeLabel: label, severity: 'info', message: 'has no incoming connections' });

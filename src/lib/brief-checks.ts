@@ -84,7 +84,7 @@ export function evaluateChecks(checks: BriefCheck[], nodes: SystemNode[], edges:
         });
       }
       case 'clean':
-        return components.length > 0 && !computeIssues(nodes, edges).some((issue) => issue.severity === 'warning');
+        return components.length > 0 && !computeIssues(nodes, edges).some((issue) => issue.id.startsWith('disconnected-'));
     }
   };
 

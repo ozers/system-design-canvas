@@ -71,7 +71,10 @@ Node fields: `id`, `type`, `label` and `tech` (a list of technology names, may b
 Optional: `description` (one short sentence; the card shows two lines of it), `story` (longer
 narration, shown in presentation mode), `owner`,
 `status` (operational | degraded | down | maintenance), `environment` (production | staging | development),
-`links` (a list of `{ "label", "url" }`, http(s) or mailto only).
+`links` (a list of `{ "label", "url" }`, http(s) or mailto only),
+`capacity` (requests per second one instance can take, e.g. "500 req/s") and `instances` (a whole number).
+The canvas compares capacity × instances with the `throughput` of the edges coming in, so write
+throughput as a request rate ("1.2k req/s", "300/min") when you want that check.
 
 Node `type` is one of:
 

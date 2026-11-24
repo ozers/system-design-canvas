@@ -7,6 +7,7 @@ import { NODE_REGISTRY } from './node-registry';
 import { IconChip } from '@/components/ui/panel';
 import { useCanvasStore } from '@/stores/useCanvasStore';
 import { useHasValidationWarning } from '@/lib/validation';
+import { formatRate, NEAR_CAPACITY, useNodeCapacity } from '@/lib/capacity';
 import { cn } from '@/lib/utils';
 import type { NodeEnvironment, NodeStatus, SystemNode } from '@/types';
 
@@ -43,6 +44,7 @@ function BaseSystemNodeComponent({ id, data, selected, draggable }: NodeProps<Sy
   const presenting = useCanvasStore((s) => s.presentation.active);
   const setSelectedNodeId = useCanvasStore((s) => s.setSelectedNodeId);
   const hasWarning = useHasValidationWarning(id);
+  const capacity = useNodeCapacity(id);
   const [resizedW, resizedH] = useResized(id).split(':').map((flag) => flag === '1');
 
   const techStack = data.techStack ?? [];
@@ -122,6 +124,25 @@ function BaseSystemNodeComponent({ id, data, selected, draggable }: NodeProps<Sy
             <span className="ml-auto inline-flex shrink-0 items-center gap-0.5 font-mono">
               <Link2 className="size-3" />
               {linkCount}
+            </span>
+          )}
+        </div>
+      )}
+
+      {capacity && capacity.limit !== null && (
+        <div className="mt-2 flex items-center gap-2 font-mono text-[11px] leading-[14px] text-ink-3">
+          <span className="min-w-0 truncate">
+            {capacity.load !== null && `${formatRate(capacity.load)} / `}
+            {formatRate(capacity.limit)} req/s
+          </span>
+          {capacity.utilization !== null && (
+            <span
+              className={cn(
+                'ml-auto shrink-0',
+                capacity.utilization > 1 ? 'font-semibold text-danger' : capacity.utilization >= NEAR_CAPACITY ? 'text-warn' : 'text-ok'
+              )}
+            >
+              {Math.round(capacity.utilization * 100)}%
             </span>
           )}
         </div>

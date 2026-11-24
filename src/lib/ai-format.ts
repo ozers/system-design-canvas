@@ -36,6 +36,9 @@ export interface DesignNode {
   status?: NodeStatus;
   environment?: NodeEnvironment;
   owner?: string;
+  /** Requests per second one instance can take, as text (e.g. "500 req/s"). */
+  capacity?: string;
+  instances?: number;
   links?: { label: string; url: string }[];
 }
 
@@ -114,7 +117,7 @@ const PROTOCOL_ALIASES: Record<string, SystemEdgeType> = {
   db: 'db-query',
 };
 
-const NODE_TEXT_FIELDS = ['description', 'story', 'owner'] as const;
+const NODE_TEXT_FIELDS = ['description', 'story', 'owner', 'capacity'] as const;
 const EDGE_TEXT_FIELDS = ['label', 'description', 'latency', 'dataFormat', 'throughput'] as const;
 
 /** Groups and sticky notes are layout aids: they stay out of the prompt and are never touched. */
@@ -135,6 +138,7 @@ function toDesignNode(node: SystemNode): DesignNode {
   }
   if (data.status) out.status = data.status;
   if (data.environment) out.environment = data.environment;
+  if (data.instances) out.instances = data.instances;
   if (data.links && data.links.length > 0) out.links = data.links.map((link) => ({ label: link.label, url: link.url }));
   return out;
 }
@@ -274,6 +278,8 @@ export function parseDesign(input: string): ParseResult {
     if (status) node.status = status;
     const environment = oneOf(rec.environment, NODE_ENVIRONMENTS);
     if (environment) node.environment = environment;
+    const instances = Math.floor(Number(rec.instances));
+    if (instances >= 1 && instances <= 100000) node.instances = instances;
     const links = readLinks(rec.links, where, errors);
     if (links) node.links = links;
     nodes.push(node);
@@ -358,6 +364,8 @@ function nodeData(node: DesignNode): SystemNodeData {
   if (node.status) data.status = node.status;
   if (node.environment) data.environment = node.environment;
   if (node.owner) data.owner = node.owner;
+  if (node.capacity) data.capacity = node.capacity;
+  if (node.instances) data.instances = node.instances;
   if (node.links) data.links = node.links.map((link) => ({ ...link }));
   return data;
 }
@@ -596,7 +604,10 @@ Node fields: \`id\`, \`type\`, \`label\` and \`tech\` (a list of technology name
 Optional: \`description\` (one short sentence; the card shows two lines of it), \`story\` (longer
 narration, shown in presentation mode), \`owner\`,
 \`status\` (${NODE_STATUSES.join(' | ')}), \`environment\` (${NODE_ENVIRONMENTS.join(' | ')}),
-\`links\` (a list of \`{ "label", "url" }\`, http(s) or mailto only).
+\`links\` (a list of \`{ "label", "url" }\`, http(s) or mailto only),
+\`capacity\` (requests per second one instance can take, e.g. "500 req/s") and \`instances\` (a whole number).
+The canvas compares capacity × instances with the \`throughput\` of the edges coming in, so write
+throughput as a request rate ("1.2k req/s", "300/min") when you want that check.
 
 Node \`type\` is one of:
 

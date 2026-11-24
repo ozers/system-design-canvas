@@ -131,7 +131,7 @@ function MoreDetails({
   const [linkLabel, setLinkLabel] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
   const links = data.links ?? [];
-  const setCount = [data.status, data.environment, data.owner, links.length].filter(Boolean).length;
+  const setCount = [data.status, data.environment, data.owner, data.capacity, data.instances, links.length].filter(Boolean).length;
 
   const addLink = () => {
     const url = linkUrl.trim();
@@ -158,6 +158,35 @@ function MoreDetails({
 
       {open && (
         <>
+          <div className="grid gap-1.5">
+            <div className="grid grid-cols-[minmax(0,1fr)_84px] gap-1.5">
+              <Field label="Capacity per instance">
+                <Input
+                  value={data.capacity ?? ''}
+                  placeholder="e.g. 500 req/s"
+                  onChange={(e) => onChange({ capacity: e.target.value || undefined })}
+                />
+              </Field>
+              <Field label="Instances">
+                <Input
+                  type="number"
+                  min={1}
+                  step={1}
+                  inputMode="numeric"
+                  value={data.instances ?? ''}
+                  placeholder="1"
+                  onChange={(e) => {
+                    const count = Math.floor(Number(e.target.value));
+                    onChange({ instances: e.target.value && count >= 1 ? count : undefined });
+                  }}
+                />
+              </Field>
+            </div>
+            <p className="text-[11.5px] leading-[1.4] text-ink-3">
+              Compared with the throughput written on incoming connections.
+            </p>
+          </div>
+
           <div className="grid gap-1.5">
             <SectionLabel>Status</SectionLabel>
             <div className="grid grid-cols-2 gap-1">
