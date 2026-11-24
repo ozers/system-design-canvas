@@ -5,7 +5,9 @@ import { STORAGE_KEY } from '@/lib/storage';
 export const RETURNING_PENDING_ATTR = 'data-returning';
 
 /**
- * Inline script that runs before the landing paints. When the project key exists (and `?home`
+ * Inline script for the root layout's <head>; it runs before the landing paints and does nothing
+ * on other pages. It sits in the layout, not the page, because React never runs a script it
+ * renders during client-side navigation (and warns about it). When the project key exists (and `?home`
  * is absent) it hides the landing (`.landing-root` in globals.css) until ReturningVisitorRedirect
  * decides, so returning visitors see no flash. New visitors and crawlers have no key and get the
  * prerendered page as is. A timeout un-hides it if the check never runs.
@@ -13,6 +15,7 @@ export const RETURNING_PENDING_ATTR = 'data-returning';
 export const returningVisitorScript = `
 (function() {
   try {
+    if (location.pathname !== '/' && location.pathname !== '/index.html') return;
     if (new URLSearchParams(location.search).has(${JSON.stringify(LANDING_OPT_OUT_PARAM)})) return;
     if (!localStorage.getItem(${JSON.stringify(STORAGE_KEY)})) return;
     var el = document.documentElement;

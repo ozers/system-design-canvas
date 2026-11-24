@@ -4,6 +4,7 @@ import { AnalyticsBeacon } from "@/components/AnalyticsBeacon";
 import { Providers } from "@/components/providers";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
+import { returningVisitorScript } from "@/components/landing/returning-visitor";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -104,6 +105,7 @@ export default function RootLayout({
     <html lang="en" data-theme="light" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script dangerouslySetInnerHTML={{ __html: returningVisitorScript }} />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

@@ -7,7 +7,6 @@ import { Hero } from '@/components/landing/Hero';
 import { LandingNav } from '@/components/landing/LandingNav';
 import { LocalFirst } from '@/components/landing/LocalFirst';
 import { ReturningVisitorRedirect } from '@/components/landing/ReturningVisitorRedirect';
-import { returningVisitorScript } from '@/components/landing/returning-visitor';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/' },
@@ -16,8 +15,8 @@ export const metadata: Metadata = {
 export default function LandingPage() {
   return (
     <div className="landing-root min-h-screen bg-bg">
-      {/* Returning visitors (saved projects) go to the dashboard; /?home keeps the landing. */}
-      <script dangerouslySetInnerHTML={{ __html: returningVisitorScript }} />
+      {/* Returning visitors (saved projects) go to the dashboard; /?home keeps the landing.
+          The pre-paint half of this lives in the root layout's <head> (returningVisitorScript). */}
       <ReturningVisitorRedirect />
       <LandingNav />
       <main>
