@@ -1,5 +1,6 @@
 import { parseDockerCompose } from '@/lib/docker-compose';
 import { parseJsonImport, titleFromFilename, type JsonImportItem } from '@/lib/json-import';
+import { getBrief } from '@/lib/briefs';
 import { TEMPLATES } from '@/lib/templates';
 import { downloadFile } from '@/lib/utils';
 import { useProjectStore } from '@/stores/useProjectStore';
@@ -90,6 +91,40 @@ export function createFromTemplate(templateId: string): Project | null {
     structuredClone(template.nodes),
     structuredClone(template.edges)
   );
+}
+
+/** sessionStorage key prefix: the project the landing page made from a template in this tab. */
+const LANDING_PROJECT_KEY = 'sdc.landing-project.';
+
+/**
+ * Landing "Open the canvas": the first click makes a project from the template; later
+ * clicks in the same tab reopen it, so going back and forth does not pile up copies.
+ */
+export function openTemplateFromLanding(templateId: string): Project | null {
+  ensureLoaded();
+  try {
+    const id = sessionStorage.getItem(LANDING_PROJECT_KEY + templateId);
+    const existing = id && useProjectStore.getState().projects.find((p) => p.id === id);
+    if (existing) return existing;
+  } catch {
+    // sessionStorage unavailable: fall through and create.
+  }
+  const project = createFromTemplate(templateId);
+  try {
+    if (project) sessionStorage.setItem(LANDING_PROJECT_KEY + templateId, project.id);
+  } catch {
+    // Nothing to remember it with; the next click makes another copy.
+  }
+  return project;
+}
+
+/** The project for a practice brief: the one already in progress, or a new empty one. */
+export function openBrief(briefId: string): Project | null {
+  const brief = getBrief(briefId);
+  if (!brief) return null;
+  ensureLoaded();
+  const store = useProjectStore.getState();
+  return store.projects.find((p) => p.briefId === briefId) ?? store.createProject(brief.title, brief.summary, briefId);
 }
 
 /** Download one project as JSON. Returns the file name. */

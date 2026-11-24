@@ -20,8 +20,7 @@ import { ProjectCard } from './ProjectCard';
 import { ProjectModal } from './ProjectModal';
 import { TemplateStrip } from './TemplateStrip';
 import { PracticeStrip } from './PracticeStrip';
-import { getBrief } from '@/lib/briefs';
-import { createFromTemplate, exportProjectFile } from './project-io';
+import { createFromTemplate, exportProjectFile, openBrief } from './project-io';
 
 import { canvasPath } from '@/lib/routes';
 type SortKey = 'edited' | 'name' | 'created';
@@ -110,11 +109,8 @@ export function ProjectList() {
   // One project per brief: picking a brief again goes back to the design in progress.
   const handleStartBrief = useCallback(
     (briefId: string) => {
-      const brief = getBrief(briefId);
-      if (!brief) return;
-      const store = useProjectStore.getState();
-      const project = store.projects.find((p) => p.briefId === briefId) ?? store.createProject(brief.title, brief.summary, briefId);
-      router.push(canvasPath(project.id));
+      const project = openBrief(briefId);
+      if (project) router.push(canvasPath(project.id));
     },
     [router]
   );
