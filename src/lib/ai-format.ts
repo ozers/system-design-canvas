@@ -593,7 +593,8 @@ Rules:
 - At most ${MAX_DESIGN_NODES} nodes and ${MAX_DESIGN_EDGES} edges.
 
 Node fields: \`id\`, \`type\`, \`label\` and \`tech\` (a list of technology names, may be empty) are required.
-Optional: \`description\`, \`story\` (narration for presentation mode), \`owner\`,
+Optional: \`description\` (one short sentence; the card shows two lines of it), \`story\` (longer
+narration, shown in presentation mode), \`owner\`,
 \`status\` (${NODE_STATUSES.join(' | ')}), \`environment\` (${NODE_ENVIRONMENTS.join(' | ')}),
 \`links\` (a list of \`{ "label", "url" }\`, http(s) or mailto only).
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import { Handle, NodeResizer, Position, type NodeProps } from '@xyflow/react';
+import { Handle, NodeResizer, Position, useStore, type NodeProps } from '@xyflow/react';
 import { Link2, Lock, TriangleAlert } from 'lucide-react';
 import { NODE_REGISTRY } from './node-registry';
 import { IconChip } from '@/components/ui/panel';
@@ -27,12 +27,23 @@ const NODE_WIDTH = 200;
 /** Duplicate handles sharing a spot with a visible one: invisible but connectable. */
 const HIDDEN = '!opacity-0';
 
-function BaseSystemNodeComponent({ id, data, selected, draggable, width, height }: NodeProps<SystemNode>) {
+/** Width/height the user set by resizing, as "w:h" flags. The `width` prop is the measured size, so it can't tell. */
+function useResized(id: string) {
+  return useStore((s) => {
+    const node = s.nodeLookup.get(id);
+    const w = node?.width ?? node?.style?.width;
+    const h = node?.height ?? node?.style?.height;
+    return `${w === undefined ? 0 : 1}:${h === undefined ? 0 : 1}`;
+  });
+}
+
+function BaseSystemNodeComponent({ id, data, selected, draggable }: NodeProps<SystemNode>) {
   const config = NODE_REGISTRY[data.nodeType] ?? NODE_REGISTRY.service;
   const Icon = config.icon;
   const presenting = useCanvasStore((s) => s.presentation.active);
   const setSelectedNodeId = useCanvasStore((s) => s.setSelectedNodeId);
   const hasWarning = useHasValidationWarning(id);
+  const [resizedW, resizedH] = useResized(id).split(':').map((flag) => flag === '1');
 
   const techStack = data.techStack ?? [];
   const subtitle = techStack.length > 0 ? techStack.join(' · ') : config.label;
@@ -47,8 +58,8 @@ function BaseSystemNodeComponent({ id, data, selected, draggable, width, height 
           ? 'border-accent shadow-[0_0_0_3px_var(--accent-soft),var(--shadow)]'
           : 'border-line shadow-[var(--shadow)] hover:border-ink-3 hover:shadow-[var(--shadow-lg)]'
       )}
-      // Fixed 200px until resized; after resizing, fill the React Flow wrapper.
-      style={{ width: width ? '100%' : NODE_WIDTH, height: height ? '100%' : undefined }}
+      // Fixed 200px until resized, however long the text is; after resizing, fill the React Flow wrapper.
+      style={{ width: resizedW ? '100%' : NODE_WIDTH, height: resizedH ? '100%' : undefined }}
       onDoubleClick={() => setSelectedNodeId(id)}
     >
       <NodeResizer isVisible={!!selected && !presenting} minWidth={NODE_WIDTH} minHeight={60} />
@@ -99,7 +110,9 @@ function BaseSystemNodeComponent({ id, data, selected, draggable, width, height 
       </div>
 
       {data.description && (
-        <p className="mt-2 line-clamp-2 text-[12px] leading-4 text-ink-2">{data.description}</p>
+        <p className="mt-2 line-clamp-2 text-[12px] leading-4 break-words text-ink-2" title={data.description}>
+          {data.description}
+        </p>
       )}
 
       {(data.owner || linkCount > 0) && (

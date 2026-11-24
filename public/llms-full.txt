@@ -68,7 +68,8 @@ Rules:
 - At most 200 nodes and 400 edges.
 
 Node fields: `id`, `type`, `label` and `tech` (a list of technology names, may be empty) are required.
-Optional: `description`, `story` (narration for presentation mode), `owner`,
+Optional: `description` (one short sentence; the card shows two lines of it), `story` (longer
+narration, shown in presentation mode), `owner`,
 `status` (operational | degraded | down | maintenance), `environment` (production | staging | development),
 `links` (a list of `{ "label", "url" }`, http(s) or mailto only).
 
