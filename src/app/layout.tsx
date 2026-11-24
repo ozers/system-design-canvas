@@ -107,8 +107,11 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script dangerouslySetInnerHTML={{ __html: returningVisitorScript }} />
       </head>
+      {/* Browser extensions add attributes to <body> before React hydrates (ColorZilla's
+          cz-shortcut-listen, Grammarly's data-gr-*). Only this element's attributes are exempt. */}
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning
       >
         <Providers>{children}</Providers>
         <AnalyticsBeacon />
